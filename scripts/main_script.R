@@ -74,12 +74,12 @@ imported_cases_and_incidence_together <- imported_cases %>%
                    .funs = function(x){sub(pattern = "expected_", replacement = "", x)}) %>%
   dplyr::mutate_at(.vars = vars(starts_with("imported")),
                    .funs = list(~dplyr::na_if(./new_cases_adjusted_mean, "Inf"))) %>%
-  tidyr::drop_na() 
-
-imported_cases_and_incidence_together_labels <-
-  imported_cases_and_incidence_together %>%
+  tidyr::drop_na()  %>%
   dplyr::mutate_at(.vars = vars(starts_with("imported")),
-                   .funs = list(~pmin(pmax(.,0),1))) %>%
+                   .funs = list(~pmin(pmax(.,0),1)))
+
+imported_cases_and_incidence_together_labels <- 
+  imported_cases_and_incidence_together %>%
   dplyr::mutate_at(.vars = vars(starts_with("imported")),
                    .funs = function(x){cut(x, breaks = c(0, 0.01, 0.1, 1),
                                            include.lowest = T, 
@@ -101,7 +101,11 @@ ggplot2::ggsave(here("outputs","figure_1.png"),
 #--- bar plot of required reduction in flights
 # this is broken
 required_reduction <- imported_cases_and_incidence_together %>% 
-  dplyr::select(iso_code, expected_imported_cases_scenario_2, new_cases_adjusted_mean, importation_per_incidence = importation_per_incidence_scenario_2) %>%
+  inner_join(imported_cases) %>%
+  dplyr::select(iso_code = destination_country_iso_code,
+                expected_imported_cases_scenario_2,
+                new_cases_adjusted_mean, 
+                importation_per_incidence = imported_cases_scenario_2) %>%
   dplyr::distinct() %>% 
   dplyr::filter(importation_per_incidence > 0.01) %>%
   dplyr::mutate(required_reduction_in_passengers = new_cases_adjusted_mean/expected_imported_cases_scenario_2*0.01) %>% 
@@ -109,8 +113,9 @@ required_reduction <- imported_cases_and_incidence_together %>%
   dplyr::mutate(country = countrycode::countrycode(iso_code, "iso3c", "iso.name.en"))
 
 
-figure_2 <- required_reduction %>% 
-  dplyr::mutate(country = 
+figure_2 <- 
+  dplyr::mutate(required_reduction,
+                country = 
                   dplyr::case_when(
                     country == "Dominican Republic (the)" ~ "Dominican Republic",
                     country == "Korea (the Republic of)" ~ "South Korea",
@@ -121,11 +126,14 @@ figure_2 <- required_reduction %>%
                     TRUE ~ country)) %>%
   ggplot2::ggplot() + 
   ggplot2::geom_col(ggplot2::aes(x = country, y = required_reduction_in_passengers), fill = "#58508d", alpha = 0.8) + 
-  ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90)) +
+  theme_bw() +
+  ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90,
+                                                     hjust = 1, 
+                                                     vjust =0.5)) +
   ggplot2::scale_y_continuous(labels = scales::percent) + 
-  ggplot2::labs(x = "Country", y = "Required reduction in passengers to achieve Green rating")
+  ggplot2::labs(x = "Country", y = "Required reduction in passengers to reduce\nimported cases to less than 1% of estimated local incidence")
 
-ggplot2::ggsave("covid_travel_restrictions/figures/figure_2.png",
+ggplot2::ggsave(here("outputs","figure_2.png"),
                 figure_2,
                 width = 9, 
                 height = 6)
