@@ -178,7 +178,8 @@ figure_3 <-
   theme_fig2(world = TRUE) +
   xlab("Expected number of imported cases") +
   ylab("Expected number of imported cases\nas percentage of local incidence") +
-  ggtitle("Traveller levels scaled down by reductions in OpenSky May 2020") +
+  ggtitle(label    = "Traveller levels scaled down by reductions in OpenSky May 2020",
+          subtitle = "Countries with imported cases at least 1% of estimated local incidence") +
   annotation_logticks(sides = "b") +
   ggplot2::scale_fill_manual(
     values = c(magrittr::set_names(x = RColorBrewer::brewer.pal(3, "Purples"),
