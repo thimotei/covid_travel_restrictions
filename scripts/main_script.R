@@ -15,13 +15,18 @@ oag_traveller_data_may_2020 <-
 
 #--- computing reduction in flights scaling factor for all pairs of countries
 may_travel_data <- oag_traveller_data_may_2020 %>%
-  dplyr::full_join(total_flights_may_2019_2020) %>%
-  dplyr::mutate(scaling_factor = dplyr::case_when(is.na(scaling_factor) == TRUE  ~ 0.3090604,
-                                                  is.na(scaling_factor) == FALSE ~ scaling_factor)) %>%
-  dplyr::mutate(origin_country      =  countrycode::countrycode(origin_country_iso_code, "iso3c", "country.name"),
-                destination_country =  countrycode::countrycode(destination_country_iso_code, "iso3c", "country.name")) %>%
+  dplyr::full_join(total_flights_may_2019_2020,
+                   by = c("origin_country_iso_code", "destination_country_iso_code")) %>%
+  dplyr::mutate(scaling_factor = 
+                 if_else(is.na(scaling_factor), 0.3090604, scaling_factor)) %>%
+  dplyr::mutate(origin_country      =  
+                  countrycode::countrycode(origin_country_iso_code, "iso3c", "country.name"),
+                destination_country = 
+                  countrycode::countrycode(destination_country_iso_code, "iso3c", "country.name")) %>%
   dplyr::mutate(scaled_travellers = total_passengers*scaling_factor) %>%
-  dplyr::select(origin_country, destination_country, origin_country_iso_code, destination_country_iso_code, total_passengers, scaling_factor, scaled_travellers)
+  dplyr::select(origin_country, destination_country,
+                origin_country_iso_code, destination_country_iso_code,
+                total_passengers, scaling_factor, scaled_travellers)
 #--- 0.3090604 is the mean of the existing scaling factors. We use this in the absence of data for countries without
 #--- estimates in the OpenSky dataset
 
@@ -35,7 +40,7 @@ prevalence_data_country_A <- globalPrevalenceEstimates() %>%
   dplyr::select(origin_country_iso_code = iso_code_dep, prevalence = propCurrentlyInfMid) %>%
   tidyr::drop_na()
 
-asymptomatic_prop <- 0.5
+asymptomatic_prop     <- 0.5
 traveller_reduction_1 <- 0.75
 traveller_reduction_2 <- 0.5
 
