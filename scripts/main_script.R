@@ -37,8 +37,10 @@ prevalence_data_country_A <- globalPrevalenceEstimates() %>%
   dplyr::mutate(iso_code = countrycode::countrycode(country, "country.name", 'iso3c')) %>%
   dplyr::mutate(iso_code_dep = iso_code) %>% 
   dplyr::ungroup(country) %>%
-  dplyr::select(origin_country_iso_code = iso_code_dep, prevalence = propCurrentlyInfMid) %>%
-  tidyr::drop_na()
+  dplyr::select(origin_country_iso_code = iso_code_dep, 
+                country,
+                prevalence = propCurrentlyInfMid) 
+# if we drop NAs we lose Kosovo
 
 asymptomatic_prop     <- 0.5
 traveller_reduction_1 <- 0.75
