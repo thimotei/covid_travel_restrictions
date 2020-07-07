@@ -47,12 +47,12 @@ getAdjustedCaseDataNational <- function()
   asymptomatic_high <- 0.7
   
   
-  ecdcCaseData <- rio::import("https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-2020-06-21.xlsx") %>%
+  ecdcCaseData <- read.csv("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv", na.strings = "", fileEncoding = "UTF-8-BOM") %>%
     dplyr::rename(new_cases = cases,
                   new_deaths = deaths,
                   country = countriesAndTerritories,
                   iso_code = countryterritoryCode) %>%
-    dplyr::mutate(date = lubridate::ymd(dateRep)) %>%
+    dplyr::mutate(date = lubridate::dmy(dateRep)) %>%
     dplyr::filter(new_cases >= 0)
   
   underReportingPath <- here("data/under_reporting_estimates/")
@@ -124,11 +124,11 @@ globalPrevalenceEstimates <- function()
   asymptomaticEstimateLow <- 0.10
   asymptomaticEstimateHigh <- 0.70
   
-  allDatRaw <- rio::import("https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-2020-06-21.xlsx") %>%
+  allDatRaw <- read.csv("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv", na.strings = "", fileEncoding = "UTF-8-BOM") %>%
     dplyr::rename(date = dateRep, 
                   country = countriesAndTerritories,
                   countryCode = countryterritoryCode) %>%
-    dplyr::mutate(date = lubridate::ymd(date))
+    dplyr::mutate(date = lubridate::dmy(date))
   
   countryCodesLookUp <- allDatRaw %>%
     dplyr::select(country, 
