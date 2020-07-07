@@ -77,8 +77,7 @@ imported_cases_and_incidence_together <- imported_cases %>%
                    .funs = list(~pmin(pmax(.,0),1))) %>%
   dplyr::mutate_at(.vars = vars(starts_with("expected")),
                    .funs = function(x){cut(x, breaks = c(0, 0.01, 0.1, 1),
-                                           include.lowest = F, 
-                                           right = T, 
+                                           include.lowest = T, 
                                            labels = c("Green",
                                                       "Amber",
                                                       "Red"))}) %>%
@@ -86,41 +85,12 @@ imported_cases_and_incidence_together <- imported_cases %>%
 
 
 #--- making figure 1 - map of risk of imported cases
-may_2020_map_data <- combineMapAndIncidenceData(imported_cases_and_incidence_together)
+p_together <- mapPlottingFunction(imported_cases_and_incidence_together)
 
-may_2020_map_data_scenario_1 <- may_2020_map_data %>%
-  dplyr::select(country, lat, long, group, importation_per_incidence_scenario_1, risk_rating_scenario_1) %>%
-  dplyr::rename(importation_per_incidence = importation_per_incidence_scenario_1,
-                risk_rating = risk_rating_scenario_1)
-
-may_2020_map_data_scenario_2 <- may_2020_map_data %>%
-  dplyr::select(country, lat, long, group, importation_per_incidence_scenario_2, risk_rating_scenario_2) %>%
-  dplyr::rename(importation_per_incidence = importation_per_incidence_scenario_2,
-                risk_rating = risk_rating_scenario_2)
-
-may_2020_map_data_scenario_3 <- may_2020_map_data %>%
-  dplyr::select(country, lat, long, group, importation_per_incidence_scenario_3, risk_rating_scenario_3) %>%
-  dplyr::rename(importation_per_incidence = importation_per_incidence_scenario_3,
-                risk_rating = risk_rating_scenario_3)
-
-may_2020_map_data_scenario_4 <- may_2020_map_data %>%
-  dplyr::select(country, lat, long, group, importation_per_incidence_scenario_4, risk_rating_scenario_4) %>%
-  dplyr::rename(importation_per_incidence = importation_per_incidence_scenario_4,
-                risk_rating = risk_rating_scenario_4)
-
-
-p1 <- mapPlottingFunction(may_2020_map_data_scenario_1)
-p2 <- mapPlottingFunction(may_2020_map_data_scenario_2)
-p3 <- mapPlottingFunction(may_2020_map_data_scenario_3)
-p4 <- mapPlottingFunction(may_2020_map_data_scenario_4)
-
-p_together <- ggpubr::ggarrange(p1, p2, p3, p4, ncol=2, nrow=2, common.legend = TRUE, legend="bottom", labels = c("A", "B", "C", "D"))
-p_together
-
-ggplot2::ggsave("covid_travel_restrictions/figures/figure_1.png",
+ggplot2::ggsave(here("outputs","figure_1.png"),
                 p_together,
                 width = 16, 
-                height = 8)
+                height = 8, units = "in", dpi = 300)
 
 
 #--- bar plot of required reduction in flights
