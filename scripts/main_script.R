@@ -127,7 +127,7 @@ figure_2_data <-
   mutate(region = countrycode::countrycode(sourcevar = iso_code,
                                            origin = "iso3c",
                                            destination = "un.region.name"
-                                           )) %>%
+  )) %>%
   mutate(region_abb = ifelse(region == "Oceania", "Oc.", region))
 
 figure_2 <- figure_2_data %>%
@@ -148,6 +148,57 @@ ggplot2::ggsave(here("outputs","figure_2.png"),
                 height = 6)
 
 
+figure_3_data <-
+  figure_2_data %>%
+  mutate(label = cut(importation_per_incidence, breaks = c(0, 0.01, 0.1, 1),
+                     include.lowest = T, 
+                     labels = c("Green",
+                                "Amber",
+                                "Red"))) %>%
+  mutate(importation_per_incidence_trim =
+           pmin(0.995,pmax(0.005,importation_per_incidence)))
 
 
+figure_3 <- 
+  ggplot(data = figure_3_data,
+       aes(x = expected_imported_cases_scenario_2, 
+           y = importation_per_incidence_trim)) +
+  scale_x_log10() +
+  geom_hline(yintercept = 0.1, lty = 2, alpha = 0.25) +
+  geom_point() +
+  geom_label_repel(aes(label = iso_code,
+                       color = label,
+                       fill = label), size = 3, 
+                   segment.color = "black",
+                   label.size = 0.1, force = 5,
+                   min.segment.length = 0) +
+  scale_y_continuous(trans = "logit", labels = scales::percent_format(accuracy = 1),
+                     breaks = c(0.01, 0.99, 0.5, 0.1, 0.9, 0.25, 0.75),
+                     expand = expansion(mult = c(0.1, 0.1))) +
+  theme_fig2(world = TRUE) +
+  xlab("Expected number of imported cases") +
+  ylab("Expected number of imported cases\nas percentage of local incidence") +
+  ggtitle("Traveller levels scaled down by reductions in OpenSky May 2020") +
+  annotation_logticks(sides = "b") +
+  ggplot2::scale_fill_manual(
+    values = c(magrittr::set_names(x = RColorBrewer::brewer.pal(3, "Purples"),
+                                   value = c("Green", "Amber", "Red")),
+               "No data" = rgb(red = 1, green = 0.9, blue = 0.9)),
+    name = "Expected imported cases as percentage of estimated local incidence",
+    breaks = c("Green", "Amber", "Red", "No data"),
+    labels = c("Less than 1%", "Between 1% and 10%", "Greater than 10%", "No data")) +
+  ggplot2::scale_color_manual(
+    values = c("Green" = "white",
+               "Amber" = "black",
+               "Red" = "white",
+               "No data" = "black"),
+    name = "Expected imported cases as percentage of estimated local incidence",
+    breaks = c("Green", "Amber", "Red", "No data"),
+    labels = c("Less than 1%", "Between 1% and 10%", "Greater than 10%", "No data")) 
+
+
+ggplot2::ggsave(here("outputs","figure_3.png"),
+                figure_3,
+                width = 9, 
+                height = 6)
 

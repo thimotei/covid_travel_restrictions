@@ -2,6 +2,7 @@ library("rnaturalearth")
 library("rnaturalearthdata")
 library(rgeos)
 library(mapproj)
+library(ggrepel)
 
 theme_map <- function(world = FALSE) {
   ggplot2::theme_minimal() +
