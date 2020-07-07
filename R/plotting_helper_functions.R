@@ -43,7 +43,7 @@ combineMapAndIncidenceData <- function(dataToPlot)
     dplyr::mutate(country = countrycode::countrycode(iso_code, "iso3c", destination = 'iso.name.en')) %>%
     dplyr::filter(country != "Antarctica") %>%
     dplyr::left_join(dataToPlot, by = "iso_code") %>%
-    dplyr::select(country, lat, long, group, country, risk_rating)
+    dplyr::select(country, lat, long, group, country)
   
 }
 
