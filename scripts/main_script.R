@@ -11,7 +11,7 @@ total_flights_may_2019_2020 <-
                        "flight_reduction_scaling_factors.csv"))
 oag_traveller_data_may_2020 <- 
   readr::read_csv(here("data",
-                       "covid_travel_restrictions/data/oag_data_may_2019_2020"))
+                       "oag_data_may_2019_2020"))
 
 #--- computing reduction in flights scaling factor for all pairs of countries
 may_travel_data <- oag_traveller_data_may_2020 %>%
