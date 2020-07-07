@@ -4,10 +4,10 @@ source("covid_travel_restrictions/R/flight_data_cleaning_utils.R")
 source("covid_travel_restrictions/R/data_helper_functions.R")
 source("covid_travel_restrictions/R/plotting_helper_functions.R")
 
-open_sky_may_2019   <- readr::read_csv("covid_travel_restrictions/data/open_sky_may_2019.gz")
-open_sky_may_2020   <- readr::read_csv("covid_travel_restrictions/data/open_sky_may_2020.gz")
+open_sky_may_2019   <- readr::read_csv(here("data","data/open_sky_may_2019.gz"))
+open_sky_may_2020   <- readr::read_csv(here("data","open_sky_may_2020.gz"))
 
-airport_lookup <- read.delim("covid_travel_restrictions/data/airports.dat", sep = ",") %>%
+airport_lookup <- read.delim(here("data", "airports.dat"), sep = ",") %>%
   dplyr::select(country = Country, three_letter_code, four_letter_code)
 
 flight_data_clean_may_2019   <- clean_flight_data(open_sky_may_2019)
@@ -43,7 +43,7 @@ total_flights_may_2019_2020 <- total_flights_may_2019 %>%
   tidyr::drop_na()
 
 
-oag_traveller_data <- readr::read_csv("covid_travel_restrictions/data/Kathy flight_data_all_2019_monthly.csv")
+oag_traveller_data <- readr::read_csv(here("data","Kathy flight_data_all_2019_monthly.csv"))
  
   
 oag_traveller_data_may_2020 <- oag_traveller_data %>%

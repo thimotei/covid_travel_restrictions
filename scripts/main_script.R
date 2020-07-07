@@ -1,12 +1,17 @@
+library(here)
 here::here() %>% setwd()
 
-source("covid_travel_restrictions/R/flight_data_cleaning_utils.R")
-source("covid_travel_restrictions/R/data_helper_functions.R")
-source("covid_travel_restrictions/R/plotting_helper_functions.R")
+source(here("R","flight_data_cleaning_utils.R"))
+source(here("R","data_helper_functions.R"))
+source(here("R","plotting_helper_functions.R"))
 
 #--- reading in the cleaned data files
-total_flights_may_2019_2020 <- readr::read_csv("covid_travel_restrictions/data/flight_reduction_scaling_factors.csv")
-oag_traveller_data_may_2020 <- readr::read_csv("covid_travel_restrictions/data/oag_data_may_2019_2020")
+total_flights_may_2019_2020 <- 
+  readr::read_csv(here("data",
+                       "flight_reduction_scaling_factors.csv"))
+oag_traveller_data_may_2020 <- 
+  readr::read_csv(here("data",
+                       "covid_travel_restrictions/data/oag_data_may_2019_2020"))
 
 #--- computing reduction in flights scaling factor for all pairs of countries
 may_travel_data <- oag_traveller_data_may_2020 %>%

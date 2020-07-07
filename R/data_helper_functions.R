@@ -8,7 +8,7 @@ getUnderReportingCaseDeathPopulationAndTestingData <- function()
   owidData <- readr::read_csv("https://covid.ourworldindata.org/data/owid-covid-data.csv") %>%
     dplyr::left_join(adHocTestData, by = c("location", "iso_code", "date")) 
   
-  underReportingPath <- "covid_travel_restrictions/data/under_reporting_estimates/"
+  underReportingPath <- here("data/under_reporting_estimates/")
   files <- dir(path = underReportingPath,
                pattern = "*.rds")
   
@@ -55,7 +55,7 @@ getAdjustedCaseDataNational <- function()
     dplyr::mutate(date = lubridate::ymd(dateRep)) %>%
     dplyr::filter(new_cases >= 0)
   
-  underReportingPath <- "covid_travel_restrictions/data/under_reporting_estimates/"
+  underReportingPath <- here("data/under_reporting_estimates/")
   files <- dir(path = underReportingPath,
                pattern = "*.rds")
   
@@ -136,7 +136,7 @@ globalPrevalenceEstimates <- function()
     unique()
   
   
-  data_path <- "covid_travel_restrictions/data/under_reporting_estimates/"
+  data_path <- here("data/under_reporting_estimates/")
   files <- dir(path = data_path,
                pattern = "*.rds")
   
