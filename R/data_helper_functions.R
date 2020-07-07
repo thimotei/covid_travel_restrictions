@@ -159,7 +159,7 @@ globalPrevalenceEstimates <- function()
     dplyr::mutate(country = dplyr::case_when(country == "Cote dIvoire" ~ "Côte d'Ivoire",
                                              country != "Cote dIvoire" ~ country)) 
   
-  
+  # can this not be replaced with a call to wpp
   worldPopulationEstimatesRaw <- readr::read_csv("https://population.un.org/wpp/Download/Files/1_Indicators%20(Standard)/CSV_FILES/WPP2019_TotalPopulationBySex.csv")
   
   worldPopulationEstimatesClean <- worldPopulationEstimatesRaw %>%
