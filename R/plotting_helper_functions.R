@@ -41,7 +41,7 @@ mapPlottingFunction <- function(x)
   toPlot <- full_join(x, world) %>%
     # dplyr::rename(imported_cases_and_incidence_together,
     #               country = destination_country) %>%
-    gather(key, value, starts_with("expected")) %>%
+    gather(key, value, starts_with("imported")) %>%
     mutate(key = readr::parse_number(key),
            key = LETTERS[key],
            key = fct_recode(key,
@@ -57,7 +57,7 @@ mapPlottingFunction <- function(x)
            risk_rating = forcats::fct_explicit_na(risk_rating,
                                                   na_level = "No data"))
   
-  plotOutput <-ggplot(data = toPlot,
+  plotOutput <- ggplot(data = toPlot,
                       aes(geometry = geometry)) +
     geom_sf(aes(fill = risk_rating),
             size = 0.25) +

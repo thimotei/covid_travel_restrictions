@@ -55,7 +55,7 @@ imported_cases <- may_travel_data %>%
   dplyr::mutate(expected_imported_cases_scenario_1  = total_passengers*prevalence,
                 expected_imported_cases_scenario_2  = scaled_travellers*prevalence,
                 expected_imported_cases_scenario_3  = total_passengers*prevalence*traveller_reduction_1,
-                expected_imported_cases_scenario_4  = total_passengers*prevalence*traveller_reduction_2)  %>%
+                expected_imported_cases_scenario_4  = total_passengers*prevalence*traveller_reduction_2) %>%
   dplyr::summarise_at(.vars = vars(starts_with("expected_imported_cases_scenario_")),
                       .funs = function(x){sum(x, na.rm=T)/30})
 
@@ -70,12 +70,17 @@ incidence_data_country_B <-  getAdjustedCaseDataNational() %>%
 
 imported_cases_and_incidence_together <- imported_cases %>%
   dplyr::left_join(incidence_data_country_B) %>%
-  dplyr::mutate_at(.vars = vars(starts_with("expected")),
+  dplyr::rename_at(.vars = vars(starts_with("expected")), 
+                   .funs = function(x){sub(pattern = "expected_", replacement = "", x)}) %>%
+  dplyr::mutate_at(.vars = vars(starts_with("imported")),
                    .funs = list(~dplyr::na_if(./new_cases_adjusted_mean, "Inf"))) %>%
-  tidyr::drop_na() %>%
-  dplyr::mutate_at(.vars = vars(starts_with("expected")),
+  tidyr::drop_na() 
+
+imported_cases_and_incidence_together_labels <-
+  imported_cases_and_incidence_together %>%
+  dplyr::mutate_at(.vars = vars(starts_with("imported")),
                    .funs = list(~pmin(pmax(.,0),1))) %>%
-  dplyr::mutate_at(.vars = vars(starts_with("expected")),
+  dplyr::mutate_at(.vars = vars(starts_with("imported")),
                    .funs = function(x){cut(x, breaks = c(0, 0.01, 0.1, 1),
                                            include.lowest = T, 
                                            labels = c("Green",
@@ -85,7 +90,7 @@ imported_cases_and_incidence_together <- imported_cases %>%
 
 
 #--- making figure 1 - map of risk of imported cases
-p_together <- mapPlottingFunction(imported_cases_and_incidence_together)
+p_together <- mapPlottingFunction(imported_cases_and_incidence_together_labels)
 
 ggplot2::ggsave(here("outputs","figure_1.png"),
                 p_together,
@@ -94,7 +99,7 @@ ggplot2::ggsave(here("outputs","figure_1.png"),
 
 
 #--- bar plot of required reduction in flights
-
+# this is broken
 required_reduction <- imported_cases_and_incidence_together %>% 
   dplyr::select(iso_code, expected_imported_cases_scenario_2, new_cases_adjusted_mean, importation_per_incidence = importation_per_incidence_scenario_2) %>%
   dplyr::distinct() %>% 
