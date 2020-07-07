@@ -133,7 +133,7 @@ globalPrevalenceEstimates <- function()
   countryCodesLookUp <- allDatRaw %>%
     dplyr::select(country, 
                   countryCode) %>% 
-    unique()
+    dplyr::distinct()
   
   
   data_path <- here("data/under_reporting_estimates/")
