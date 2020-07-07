@@ -24,6 +24,23 @@ theme_map <- function(world = FALSE) {
     )
 }
 
+theme_fig2 <- function(world = FALSE) {
+  ggplot2::theme_minimal() +
+    ggplot2::theme(
+      text = ggplot2::element_text(family = "serif", color = "#22211d"),
+      #axis.line = ggplot2::element_blank(),
+      panel.spacing.x = unit(1, "lines"),
+      panel.grid.minor = ggplot2::element_line(color = "#ebebe5", size = 0),
+      panel.grid.major.x = ggplot2::element_line(color = "#ebebe5", size = 0),
+      #plot.background = ggplot2::element_rect(fill = "#f5f5f2", color = NA), 
+      #panel.background = ggplot2::element_rect(fill = "#f5f5f2", color = NA), 
+      #legend.background = ggplot2::element_rect(fill = "#f5f5f2", color = NA),
+      panel.border = ggplot2::element_blank(),
+      #plot.margin = grid::unit(c(0,0,0,0), "mm"),
+      legend.position = if(world == TRUE){"bottom"}
+    )
+}
+
 mapPlottingFunction <- function(x)
 {
   

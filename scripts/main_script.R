@@ -113,7 +113,7 @@ required_reduction <- imported_cases_and_incidence_together %>%
   dplyr::mutate(country = countrycode::countrycode(iso_code, "iso3c", "iso.name.en"))
 
 
-figure_2 <- 
+figure_2_data <- 
   dplyr::mutate(required_reduction,
                 country = 
                   dplyr::case_when(
@@ -123,15 +123,24 @@ figure_2 <-
                     country == "United Arab Emirates (the)" ~ "UAE",
                     country == "United States of America (the)" ~ "USA",
                     country == "Venezuela (Bolivarian Republic of)" ~ "Venezuela",
-                    TRUE ~ country)) %>%
+                    TRUE ~ country))  %>%
+  mutate(region = countrycode::countrycode(sourcevar = iso_code,
+                                           origin = "iso3c",
+                                           destination = "un.region.name"
+                                           )) %>%
+  mutate(region_abb = ifelse(region == "Oceania", "Oc.", region))
+
+figure_2 <- figure_2_data %>%
   ggplot2::ggplot() + 
   ggplot2::geom_col(ggplot2::aes(x = country, y = required_reduction_in_passengers), fill = "#58508d", alpha = 0.8) + 
-  theme_bw() +
+  theme_fig2(world = FALSE) +
   ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90,
                                                      hjust = 1, 
                                                      vjust =0.5)) +
   ggplot2::scale_y_continuous(labels = scales::percent) + 
-  ggplot2::labs(x = "Country", y = "Required reduction in passengers to reduce\nimported cases to less than 1% of estimated local incidence")
+  ggplot2::labs(x = "Country", y = "Required reduction in passengers to reduce\nimported cases to less than 1% of estimated local incidence") +
+  facet_grid(. ~ region_abb, scales = "free_x", 
+             space = "free_x") 
 
 ggplot2::ggsave(here("outputs","figure_2.png"),
                 figure_2,
