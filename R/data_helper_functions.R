@@ -47,7 +47,7 @@ getAdjustedCaseDataNational <- function()
   asymptomatic_high <- 0.7
   
   
-  ecdcCaseData <- rio::import("https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-2020-06-21.xlsx") %>%
+  ecdcCaseData <- read.csv("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv", na.strings = "", fileEncoding = "UTF-8-BOM") %>%
     dplyr::rename(new_cases = cases,
                   new_deaths = deaths,
                   country = countriesAndTerritories,
@@ -124,7 +124,7 @@ globalPrevalenceEstimates <- function()
   asymptomaticEstimateLow <- 0.10
   asymptomaticEstimateHigh <- 0.70
   
-  allDatRaw <- rio::import("https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-2020-06-21.xlsx") %>%
+  allDatRaw <- read.csv("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv", na.strings = "", fileEncoding = "UTF-8-BOM") %>%
     dplyr::rename(date = dateRep, 
                   country = countriesAndTerritories,
                   countryCode = countryterritoryCode) %>%
