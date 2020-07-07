@@ -52,7 +52,7 @@ getAdjustedCaseDataNational <- function()
                   new_deaths = deaths,
                   country = countriesAndTerritories,
                   iso_code = countryterritoryCode) %>%
-    dplyr::mutate(date = lubridate::ymd(dateRep)) %>%
+    dplyr::mutate(date = lubridate::dmy(dateRep)) %>%
     dplyr::filter(new_cases >= 0)
   
   underReportingPath <- "covid_travel_restrictions/data/under_reporting_estimates/"
@@ -128,7 +128,7 @@ globalPrevalenceEstimates <- function()
     dplyr::rename(date = dateRep, 
                   country = countriesAndTerritories,
                   countryCode = countryterritoryCode) %>%
-    dplyr::mutate(date = lubridate::ymd(date))
+    dplyr::mutate(date = lubridate::dmy(date))
   
   countryCodesLookUp <- allDatRaw %>%
     dplyr::select(country, 
