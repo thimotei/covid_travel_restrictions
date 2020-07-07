@@ -48,16 +48,16 @@ traveller_reduction_2 <- 0.5
 
 imported_cases <- may_travel_data %>%
   dplyr::left_join(prevalence_data_country_A) %>%
-  dplyr::select(origin_country, destination_country, origin_country_iso_code, destination_country_iso_code, total_passengers, scaled_travellers, prevalence) %>%
-  dplyr::group_by(destination_country_iso_code) %>%
+  dplyr::select(origin_country, destination_country, origin_country_iso_code, 
+                destination_country_iso_code, total_passengers, scaled_travellers, prevalence) %>%
+  dplyr::group_by(destination_country_iso_code,
+                  destination_country) %>%
   dplyr::mutate(expected_imported_cases_scenario_1  = total_passengers*prevalence,
                 expected_imported_cases_scenario_2  = scaled_travellers*prevalence,
                 expected_imported_cases_scenario_3  = total_passengers*prevalence*traveller_reduction_1,
                 expected_imported_cases_scenario_4  = total_passengers*prevalence*traveller_reduction_2)  %>%
-  dplyr::summarise(expected_imported_cases_scenario_1 = sum(expected_imported_cases_scenario_1, na.rm = TRUE)/30,
-                   expected_imported_cases_scenario_2 = sum(expected_imported_cases_scenario_2, na.rm = TRUE)/30,
-                   expected_imported_cases_scenario_3 = sum(expected_imported_cases_scenario_3, na.rm = TRUE)/30,
-                   expected_imported_cases_scenario_4 = sum(expected_imported_cases_scenario_4, na.rm = TRUE)/30)
+  dplyr::summarise_at(.vars = vars(starts_with("expected_imported_cases_scenario_")),
+                      .funs = function(x){sum(x, na.rm=T)/30})
 
 # calculating the incidence in each destination country
 incidence_data_country_B <-  getAdjustedCaseDataNational() %>%
@@ -70,35 +70,18 @@ incidence_data_country_B <-  getAdjustedCaseDataNational() %>%
 
 imported_cases_and_incidence_together <- imported_cases %>%
   dplyr::left_join(incidence_data_country_B) %>%
-  dplyr::mutate(importation_per_incidence_scenario_1 = dplyr::na_if(expected_imported_cases_scenario_1/new_cases_adjusted_mean, "Inf"),
-                importation_per_incidence_scenario_2 = dplyr::na_if(expected_imported_cases_scenario_2/new_cases_adjusted_mean, "Inf"),
-                importation_per_incidence_scenario_3 = dplyr::na_if(expected_imported_cases_scenario_3/new_cases_adjusted_mean, "Inf"),
-                importation_per_incidence_scenario_4 = dplyr::na_if(expected_imported_cases_scenario_4/new_cases_adjusted_mean, "Inf")) %>%
+  dplyr::mutate_at(.vars = vars(starts_with("expected")),
+                   .funs = list(~dplyr::na_if(./new_cases_adjusted_mean, "Inf"))) %>%
   tidyr::drop_na() %>%
-  dplyr::mutate(importation_per_incidence_scenario_1 = dplyr::case_when(importation_per_incidence_scenario_1 < 0 ~ 0,
-                                                                        importation_per_incidence_scenario_1 >  1 ~ 1,
-                                                                        importation_per_incidence_scenario_1 >= 0 && importation_per_incidence_scenario_1 <= 1 ~ importation_per_incidence_scenario_1)) %>%
-  dplyr::mutate(importation_per_incidence_scenario_2 = dplyr::case_when(importation_per_incidence_scenario_2 < 0 ~ 0,
-                                                                        importation_per_incidence_scenario_2 >  1 ~ 1,
-                                                                        importation_per_incidence_scenario_2 >= 0 && importation_per_incidence_scenario_2 <= 1 ~ importation_per_incidence_scenario_2)) %>%
-  dplyr::mutate(importation_per_incidence_scenario_3 = dplyr::case_when(importation_per_incidence_scenario_3 < 0 ~ 0,
-                                                                        importation_per_incidence_scenario_3 >  1 ~ 1,
-                                                                        importation_per_incidence_scenario_3 >= 0 && importation_per_incidence_scenario_3 <= 1 ~ importation_per_incidence_scenario_3)) %>%
-  dplyr::mutate(importation_per_incidence_scenario_4 = dplyr::case_when(importation_per_incidence_scenario_4 < 0 ~ 0,
-                                                                        importation_per_incidence_scenario_4 >  1 ~ 1,
-                                                                        importation_per_incidence_scenario_4 >= 0 && importation_per_incidence_scenario_4 <= 1 ~ importation_per_incidence_scenario_4)) %>%
-  dplyr::mutate(risk_rating_scenario_1 = dplyr::case_when(importation_per_incidence_scenario_1 <= 0.01 ~ "Green",
-                                                          importation_per_incidence_scenario_1 >  0.01 & importation_per_incidence_scenario_1 < 0.1 ~ "Amber",
-                                                          importation_per_incidence_scenario_1 >= 0.1 ~ "Red")) %>%
-  dplyr::mutate(risk_rating_scenario_2 = dplyr::case_when(importation_per_incidence_scenario_2 <= 0.01 ~ "Green",
-                                                          importation_per_incidence_scenario_2 >  0.01 & importation_per_incidence_scenario_2 < 0.1 ~ "Amber",
-                                                          importation_per_incidence_scenario_2 >= 0.1 ~ "Red")) %>%
-  dplyr::mutate(risk_rating_scenario_3 = dplyr::case_when(importation_per_incidence_scenario_3 <= 0.01 ~ "Green",
-                                                          importation_per_incidence_scenario_3 >  0.01 & importation_per_incidence_scenario_3 < 0.1 ~ "Amber",
-                                                          importation_per_incidence_scenario_3 >= 0.1 ~ "Red")) %>%
-  dplyr::mutate(risk_rating_scenario_4 = dplyr::case_when(importation_per_incidence_scenario_4 <= 0.01 ~ "Green",
-                                                          importation_per_incidence_scenario_4 >  0.01 & importation_per_incidence_scenario_4 < 0.1 ~ "Amber",
-                                                          importation_per_incidence_scenario_4 >= 0.1 ~ "Red")) %>%
+  dplyr::mutate_at(.vars = vars(starts_with("expected")),
+                   .funs = list(~pmin(pmax(.,0),1))) %>%
+  dplyr::mutate_at(.vars = vars(starts_with("expected")),
+                   .funs = function(x){cut(x, breaks = c(0, 0.01, 0.1, 1),
+                                           include.lowest = F, 
+                                           right = T, 
+                                           labels = c("Green",
+                                                      "Amber",
+                                                      "Red"))}) %>%
   dplyr::rename(iso_code = destination_country_iso_code) 
 
 
