@@ -18,7 +18,7 @@ may_travel_data <- oag_traveller_data_may_2020 %>%
   dplyr::full_join(total_flights_may_2019_2020,
                    by = c("origin_country_iso_code", "destination_country_iso_code")) %>%
   dplyr::mutate(scaling_factor = 
-                 if_else(is.na(scaling_factor), 0.3090604, scaling_factor)) %>%
+                  if_else(is.na(scaling_factor), 0.3090604, scaling_factor)) %>%
   dplyr::mutate(origin_country      =  
                   countrycode::countrycode(origin_country_iso_code, "iso3c", "country.name"),
                 destination_country = 
@@ -110,13 +110,15 @@ required_reduction <- imported_cases_and_incidence_together %>%
 
 
 figure_2 <- required_reduction %>% 
-  dplyr::mutate(country = dplyr::case_when(country == "Dominican Republic (the)" ~ "Dominican Republic",
-                                           country == "Korea (the Republic of)" ~ "South Korea",
-                                           country == "Netherland (the)" ~ "Netherlands",
-                                           country == "United Arab Emirates (the)" ~ "UAE",
-                                           country == "United States of America (the)" ~ "USA",
-                                           country == "Venezuela (Bolivarian Republic of)" ~ "Venezuela",
-                                           country != "Dominican Republic" || country !="South Korea" || country !="South Korea" || country != "Netherlands" || country != "UAE" || country != "USA" || country != "Venezuela" ~ country)) %>%
+  dplyr::mutate(country = 
+                  dplyr::case_when(
+                    country == "Dominican Republic (the)" ~ "Dominican Republic",
+                    country == "Korea (the Republic of)" ~ "South Korea",
+                    country == "Netherland (the)" ~ "Netherlands",
+                    country == "United Arab Emirates (the)" ~ "UAE",
+                    country == "United States of America (the)" ~ "USA",
+                    country == "Venezuela (Bolivarian Republic of)" ~ "Venezuela",
+                    TRUE ~ country)) %>%
   ggplot2::ggplot() + 
   ggplot2::geom_col(ggplot2::aes(x = country, y = required_reduction_in_passengers), fill = "#58508d", alpha = 0.8) + 
   ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90)) +
@@ -127,5 +129,8 @@ ggplot2::ggsave("covid_travel_restrictions/figures/figure_2.png",
                 figure_2,
                 width = 9, 
                 height = 6)
+
+
+
 
 
