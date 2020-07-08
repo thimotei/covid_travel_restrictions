@@ -95,7 +95,7 @@ incidence_data_country_B <-  getAdjustedCaseDataNational() %>%
   dplyr::group_by(iso_code) %>%
   dplyr::filter(date > "2020-05-01" & date < "2020-05-31") %>%
   dplyr::mutate(incidence_estimate = new_cases_adjusted_mid/(1 - asymptomatic_prop)) %>%
-  dplyr::summarise(new_cases_adjusted_mean = sum(incidence_estimate)/30) %>%
+  dplyr::summarise(new_cases_adjusted_mean = mean(incidence_estimate)) %>%
   dplyr::mutate(destination_country_iso_code = iso_code) %>%
   dplyr::select(destination_country_iso_code, new_cases_adjusted_mean)
 
