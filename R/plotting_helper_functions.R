@@ -1,8 +1,3 @@
-library("rnaturalearth")
-library("rnaturalearthdata")
-library(rgeos)
-library(mapproj)
-library(ggrepel)
 
 covid_pal <- c(magrittr::set_names(x = RColorBrewer::brewer.pal(3, "Purples"),
                                    value = c("Green", "Amber", "Red")),
@@ -60,24 +55,26 @@ mapPlottingFunction <- function(x)
     dplyr::left_join(x, by = "iso_code") %>%
     dplyr::select(country, iso_code, geometry)
   
-  toPlot <- full_join(x, world) %>%
+  toPlot <- dplyr::full_join(x, world) %>%
     # dplyr::rename(imported_cases_and_incidence_together,
     #               country = destination_country) %>%
-    gather(key, value, starts_with("imported")) %>%
-    mutate(key = readr::parse_number(key),
-           key = LETTERS[key],
-           key = fct_recode(key,
-                            "A: Traveller levels same as May 2019" = "A",
-                            "B: Traveller levels scaled down by reductions in OpenSky May 2020" = "B",
-                            "C: Traveller levels scaled down by 25%" = "C",
-                            "D: Traveller levels scaled down by 50%" = "D")) %>%
-    ungroup %>%
-    rename(risk_rating = value) %>%
-    mutate(risk_rating = factor(risk_rating, levels = c("Green",
-                                                        "Amber",
-                                                        "Red"), ordered = T),
-           risk_rating = forcats::fct_explicit_na(risk_rating,
-                                                  na_level = "No data"))
+    tidyr::gather(key, value, starts_with("imported")) %>%
+    dplyr::mutate(key = readr::parse_number(key),
+                  key = LETTERS[key],
+                  key = forcats::fct_recode(
+                    key,
+                    "A: Traveller levels same as May 2019" = "A",
+                    "B: Traveller levels scaled down by reductions in OpenSky May 2020" = "B",
+                    "C: Traveller levels scaled down by 25%" = "C",
+                    "D: Traveller levels scaled down by 50%" = "D")) %>%
+    dplyr::ungroup %>%
+    dplyr::rename(risk_rating = value) %>%
+    dplyr::mutate(risk_rating = factor(risk_rating, 
+                                       levels = c("Green",
+                                                  "Amber",
+                                                  "Red"), ordered = T),
+                  risk_rating = forcats::fct_explicit_na(risk_rating,
+                                                         na_level = "No data"))
   
   plotOutput <- ggplot(data = toPlot,
                        aes(geometry = geometry)) +
@@ -138,38 +135,44 @@ barDataFunction <- function(x){
 }
 
 scatterPlottingFunction <- function(x){
-  ggplot(data = x,
-         aes(x = expected_imported_cases_scenario_2, 
-             y = importation_per_incidence_trim)) +
-    scale_x_continuous(trans = "log10", expand = expansion(mult = c(0.1, 0.1))) +
+  ggplot2::ggplot(data = x,
+                  aes(x = expected_imported_cases_scenario_2, 
+                      y = importation_per_incidence_trim)) +
+    ggplot2::scale_x_continuous(trans = "log10", 
+                                expand = ggplot2::expansion(mult = c(0.1, 0.1))) +
     # geom_rect(xmin = log(0.01), xmax = log(1e4),
     #           ymin = boot::logit(0.1), ymax = boot::logit(0.995),
     #           fill = covid_pal["Red"]) +
     # geom_rect(xmin = log(0.01), xmax = log(1e4),
     #           ymin = boot::logit(0.01), ymax = boot::logit(0.1),
     #           fill = covid_pal["Amber"]) +
-    geom_hline(yintercept = 0.1, lty = 2, alpha = 0.25) +
-    geom_point() +
-    geom_label_repel(aes(label = iso_code,
-                         color = label,
-                         fill = label), size = 1.5, 
-                     segment.color = "black",
-                     label.size = 0.1, force = 3,
-                     min.segment.length = 0, segment.size = 0.25) +
-    scale_y_continuous(trans = "logit", labels = scales::percent_format(accuracy = 1),
-                       breaks = c(0.01, 0.99, 0.5,  0.25, 0.75, 0.05, 0.95),
-                       expand = expansion(mult = c(0.1, 0.1), add = c(1, 0))) +
+    ggplot2::geom_hline(yintercept = 0.1, lty = 2, alpha = 0.25) +
+    ggplot2::geom_point() +
+    ggrepel::geom_label_repel(aes(label = iso_code,
+                                  color = label,
+                                  fill = label), size = 1.5, 
+                              segment.color = "black",
+                              label.size = 0.1, force = 3,
+                              min.segment.length = 0, segment.size = 0.25) +
+    ggplot2::scale_y_continuous(trans = "logit",
+                                labels = scales::percent_format(accuracy = 1),
+                                breaks = c(0.01, 0.99, 0.5,  0.25, 0.75, 0.05, 0.95),
+                                expand = ggplot2::expansion(mult = c(0.1, 0.1),
+                                                            add = c(1, 0))) +
     theme_fig2(world = TRUE) +
-    xlab("Expected number of imported cases") +
-    ylab("Expected number of imported cases\nas percentage of local incidence") +
-    ggtitle(label    = "Traveller levels scaled down by reductions in OpenSky May 2020",
-            subtitle = "Countries with imported cases at least 1% of estimated local incidence") +
-    annotation_logticks(sides = "b") +
+    ggplot2::xlab("Expected number of imported cases") +
+    ggplot2::ylab("Expected number of imported cases\nas percentage of local incidence") +
+    ggplot2::ggtitle(label    = "Traveller levels scaled down by reductions in OpenSky May 2020",
+                     subtitle = "Countries with imported cases at least 1% of estimated local incidence") +
+    ggplot2::annotation_logticks(sides = "b") +
     ggplot2::scale_fill_manual(
       values = covid_pal,
       name = "Expected number of imported cases as percentage of estimated local incidence",
       breaks = names(covid_pal),
-      labels = c("Less than 1%", "Between 1% and 10%", "Greater than 10%", "No data")) +
+      labels = c("Less than 1%", 
+                 "Between 1% and 10%", 
+                 "Greater than 10%", 
+                 "No data")) +
     ggplot2::scale_color_manual(
       values = c("Green" = "white",
                  "Amber" = "black",
@@ -178,8 +181,9 @@ scatterPlottingFunction <- function(x){
       name = "Expected number of imported cases as percentage of estimated local incidence",
       breaks = c("Green", "Amber", "Red", "No data"),
       labels = c("Less than 1%", "Between 1% and 10%", "Greater than 10%", "No data")) +
-    guides(colour = guide_legend(override.aes = list(size = 2,
-                                                     label = c("AUT","CHN"))))
+    ggplot2::guides(colour = ggplot2::guide_legend(
+      override.aes = list(size = 2,
+                          label = c("AUT","CHN"))))
   
   
 }
@@ -187,57 +191,59 @@ scatterPlottingFunction <- function(x){
 
 tileDataFunction <- function(x){
   x %>%
-    filter(!is.na(origin_country) & 
-             !is.na(destination_country)) %>%
-    complete(origin_country_iso_code,
-             destination_country_iso_code) %>%
-    mutate(origin_region = 
-             countrycode::countrycode(
-               origin_country_iso_code,
-               "iso3c",
-               "un.region.name"),
-           destination_region =
-             countrycode::countrycode(
-               destination_country_iso_code,
-               "iso3c",
-               "un.region.name")) %>%
-    mutate(origin_region = 
-             ifelse(
-               origin_country_iso_code == "TWN",
-               "Asia",
-               origin_region),
-           destination_region = 
-             ifelse(
-               destination_country_iso_code == "TWN",
-               "Asia",
-               destination_region)) %>%
-    mutate(origin_region      = factor(origin_region),
-           destination_region = factor(destination_region)) %>%
-    arrange(origin_region, 
-            destination_region,
-            origin_country_iso_code, 
-            destination_country_iso_code) %>%
-    mutate(origin_country_iso_code      = 
-             fct_inorder(origin_country_iso_code),
-           destination_country_iso_code =
-             fct_inorder(destination_country_iso_code))
+    dplyr::filter(!is.na(origin_country) & 
+                    !is.na(destination_country)) %>%
+    tidyr::complete(origin_country_iso_code,
+                    destination_country_iso_code) %>%
+    dplyr::mutate(origin_region = 
+                    countrycode::countrycode(
+                      origin_country_iso_code,
+                      "iso3c",
+                      "un.region.name"),
+                  destination_region =
+                    countrycode::countrycode(
+                      destination_country_iso_code,
+                      "iso3c",
+                      "un.region.name")) %>%
+    dplyr::mutate(origin_region = 
+                    ifelse(
+                      origin_country_iso_code == "TWN",
+                      "Asia",
+                      origin_region),
+                  destination_region = 
+                    ifelse(
+                      destination_country_iso_code == "TWN",
+                      "Asia",
+                      destination_region)) %>%
+    dplyr::mutate(origin_region      = factor(origin_region),
+                  destination_region = factor(destination_region)) %>%
+    dplyr::arrange(origin_region, 
+                   destination_region,
+                   origin_country_iso_code, 
+                   destination_country_iso_code) %>%
+    dplyr::mutate(origin_country_iso_code      = 
+                    forcats::fct_inorder(origin_country_iso_code),
+                  destination_country_iso_code =
+                    forcats::fct_inorder(destination_country_iso_code))
 }
 
 tilePlottingFunction <- function(x){
-  ggplot(data = x,
+  ggplot2::ggplot(data = x,
          aes(x = origin_country_iso_code, 
              y = destination_country_iso_code)) +
-    geom_tile(aes(fill = scaling_factor)) +
-    theme_void() +
-    coord_equal() +
+    ggplot2::geom_tile(aes(fill = scaling_factor)) +
+    ggplot2::theme_void() +
+    ggplot2::coord_equal() +
     theme_fig2(world = F) +
-    theme(axis.text = element_text(size = 2),
-          axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
-    xlab("Origin") +
-    ylab("Destination") +
-    scale_fill_gradient(low = covid_pal["Green"],
-                        high = covid_pal["Red"], 
-                        na.value = covid_pal["No data"],
-                        limits = c(0,1),
-                        name = "Scaling\nFactor")
+    ggplot2::theme(
+      axis.text   = ggplot2::element_text(size = 2),
+      axis.text.x = ggplot2::element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+    ggplot2::xlab("Origin") +
+    ggplot2::ylab("Destination") +
+    ggplot2::scale_fill_gradient(
+      low      = covid_pal["Green"],
+      high     = covid_pal["Red"], 
+      na.value = covid_pal["No data"],
+      limits   = c(0,1),
+      name     = "Scaling\nFactor")
 }

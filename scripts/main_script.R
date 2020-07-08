@@ -1,6 +1,7 @@
 library(here)
-here::here() %>% setwd()
+setwd(here::here())
 
+source(here("R","packages.R"))
 source(here("R","flight_data_cleaning_utils.R"))
 source(here("R","data_helper_functions.R"))
 source(here("R","plotting_helper_functions.R"))
