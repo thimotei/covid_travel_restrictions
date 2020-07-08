@@ -35,7 +35,7 @@ may_travel_data <- oag_traveller_data_may_2020 %>%
 #--- using the scaled traveller numbers and prevalence to calculate expected number of imported cases
 #--- from all origin countries, to all destination countries
 prevalence_data <- globalPrevalenceEstimates()
-prevalence_data_country_A <- prevalence_data_country_A %>%
+prevalence_data_country_A <- prevalence_data %>%
   dplyr::mutate(iso_code = countrycode::countrycode(country, "country.name", 'iso3c')) %>%
   dplyr::mutate(iso_code_dep = iso_code) %>% 
   dplyr::ungroup(country) %>%
@@ -93,10 +93,10 @@ imported_cases_and_incidence_together_labels <-
 
 
 #--- making figure 1 - map of risk of imported cases
-p_together <- mapPlottingFunction(imported_cases_and_incidence_together_labels)
+figure_1 <- mapPlottingFunction(imported_cases_and_incidence_together_labels)
 
 ggplot2::ggsave(here("outputs","figure_1.png"),
-                p_together,
+                figure_1,
                 width = 16, 
                 height = 8, units = "in", dpi = 300)
 
@@ -142,8 +142,6 @@ ggplot2::ggsave(here("outputs","figure_3.png"),
                 width = 9, 
                 height = 6)
 
-
-
 figure_reduction_data <- tileDataFunction(may_travel_data)
 figure_reduction      <- tilePlottingFunction(figure_reduction_data)
 
@@ -156,5 +154,6 @@ figure_reduction_data_europe <- figure_reduction_data %>%
 figure_reduction_europe      <- tilePlottingFunction(figure_reduction_data_europe)
 
 ggplot2::ggsave(filename = here("outputs", "figure_reduction_europe.png"), 
-                plot = figure_reduction_europe,
+                plot = figure_reduction_europe +
+                  theme(axis.text = element_text(size = 4)),
                 width = 9, height = 6, dpi = 600)

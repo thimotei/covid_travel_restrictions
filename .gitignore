@@ -4,3 +4,5 @@ data/raw_data
 .Rproj.user
 
 .Rhistory
+
+outputs/
