@@ -99,7 +99,6 @@ ggplot2::ggsave(here("outputs","figure_1.png"),
 
 
 #--- bar plot of required reduction in flights
-# this is broken
 required_reduction <- imported_cases_and_incidence_together %>% 
   inner_join(imported_cases) %>%
   dplyr::select(iso_code = destination_country_iso_code,
@@ -113,35 +112,9 @@ required_reduction <- imported_cases_and_incidence_together %>%
   dplyr::mutate(country = countrycode::countrycode(iso_code, "iso3c", "iso.name.en"))
 
 
-figure_2_data <- 
-  dplyr::mutate(required_reduction,
-                country = 
-                  dplyr::case_when(
-                    country == "Dominican Republic (the)" ~ "Dominican Republic",
-                    country == "Korea (the Republic of)" ~ "South Korea",
-                    country == "Netherland (the)" ~ "Netherlands",
-                    country == "United Arab Emirates (the)" ~ "UAE",
-                    country == "United States of America (the)" ~ "USA",
-                    country == "Venezuela (Bolivarian Republic of)" ~ "Venezuela",
-                    TRUE ~ country))  %>%
-  mutate(region = countrycode::countrycode(sourcevar = iso_code,
-                                           origin = "iso3c",
-                                           destination = "un.region.name"
-  )) %>%
-  mutate(region_abb = ifelse(region == "Oceania", "Oc.", region))
-
-figure_2 <- figure_2_data %>%
-  ggplot2::ggplot() + 
-  ggplot2::geom_col(ggplot2::aes(x = country, y = required_reduction_in_passengers), fill = "#58508d", alpha = 0.8) + 
-  theme_fig2(world = FALSE) +
-  ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90,
-                                                     hjust = 1, 
-                                                     vjust =0.5)) +
-  ggplot2::scale_y_continuous(labels = scales::percent) + 
-  ggplot2::labs(x = "Country", y = "Required reduction in passengers to reduce\nimported cases to less than 1% of estimated local incidence") +
-  facet_grid(. ~ region_abb, scales = "free_x", 
-             space = "free_x") 
-
+figure_2_data <- barDataFunction(required_reduction)
+figure_2      <- barPlottingFunction(figure_2_data)
+  
 ggplot2::ggsave(here("outputs","figure_2.png"),
                 figure_2,
                 width = 9, 
@@ -159,51 +132,8 @@ figure_3_data <-
            pmin(0.995,pmax(0.005,importation_per_incidence)))
 
 
-figure_3 <- 
-  ggplot(data = figure_3_data,
-       aes(x = expected_imported_cases_scenario_2, 
-           y = importation_per_incidence_trim)) +
-  scale_x_continuous(trans = "log10", expand = expansion(mult = c(0.1, 0.1))) +
-  # geom_rect(xmin = log(0.01), xmax = log(1e4),
-  #           ymin = boot::logit(0.1), ymax = boot::logit(0.995),
-  #           fill = covid_pal["Red"]) +
-  # geom_rect(xmin = log(0.01), xmax = log(1e4),
-  #           ymin = boot::logit(0.01), ymax = boot::logit(0.1),
-  #           fill = covid_pal["Amber"]) +
-  geom_hline(yintercept = 0.1, lty = 2, alpha = 0.25) +
-  geom_point() +
-  geom_label_repel(aes(label = iso_code,
-                       color = label,
-                       fill = label), size = 1.5, 
-                   segment.color = "black",
-                   label.size = 0.1, force = 3,
-                   min.segment.length = 0, segment.size = 0.25) +
-  scale_y_continuous(trans = "logit", labels = scales::percent_format(accuracy = 1),
-                     breaks = c(0.01, 0.99, 0.5,  0.25, 0.75, 0.05, 0.95),
-                     expand = expansion(mult = c(0.1, 0.1), add = c(1, 0))) +
-  theme_fig2(world = TRUE) +
-  xlab("Expected number of imported cases") +
-  ylab("Expected number of imported cases\nas percentage of local incidence") +
-  ggtitle(label    = "Traveller levels scaled down by reductions in OpenSky May 2020",
-          subtitle = "Countries with imported cases at least 1% of estimated local incidence") +
-  annotation_logticks(sides = "b") +
-  ggplot2::scale_fill_manual(
-    values = covid_pal,
-    name = "Expected number of imported cases as percentage of estimated local incidence",
-    breaks = names(covid_pal),
-    labels = c("Less than 1%", "Between 1% and 10%", "Greater than 10%", "No data")) +
-  ggplot2::scale_color_manual(
-    values = c("Green" = "white",
-               "Amber" = "black",
-               "Red" = "white",
-               "No data" = "black"),
-    name = "Expected number of imported cases as percentage of estimated local incidence",
-    breaks = c("Green", "Amber", "Red", "No data"),
-    labels = c("Less than 1%", "Between 1% and 10%", "Greater than 10%", "No data")) +
-  guides(colour = guide_legend(override.aes = list(size = 2,
-                                                   label = c("AUT","CHN"))))
-
-
+figure_3 <- scatterPlottingFunction(figure_3_data)
+  
 ggplot2::ggsave(here("outputs","figure_3.png"),
                 figure_3,
                 width = 9, 
