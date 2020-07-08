@@ -92,7 +92,7 @@ ggplot2::ggsave(here("outputs","flight_reduction.png"),
                 units = "in")
 
 el_coords <-
-  as_edgelist(g_2) %>%
+  as_edgelist(airport_network_2) %>%
   as_tibble() %>%
   full_join(node_coords, by = c("V1" = "value")) %>%
   full_join(node_coords, by = c("V2" = "value")) %>%
