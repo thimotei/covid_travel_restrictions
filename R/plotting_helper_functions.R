@@ -183,3 +183,61 @@ scatterPlottingFunction <- function(x){
   
   
 }
+
+
+tileDataFunction <- function(x){
+  x %>%
+    filter(!is.na(origin_country) & 
+             !is.na(destination_country)) %>%
+    complete(origin_country_iso_code,
+             destination_country_iso_code) %>%
+    mutate(origin_region = 
+             countrycode::countrycode(
+               origin_country_iso_code,
+               "iso3c",
+               "un.region.name"),
+           destination_region =
+             countrycode::countrycode(
+               destination_country_iso_code,
+               "iso3c",
+               "un.region.name")) %>%
+    mutate(origin_region = 
+             ifelse(
+               origin_country_iso_code == "TWN",
+               "Asia",
+               origin_region),
+           destination_region = 
+             ifelse(
+               destination_country_iso_code == "TWN",
+               "Asia",
+               destination_region)) %>%
+    mutate(origin_region      = factor(origin_region),
+           destination_region = factor(destination_region)) %>%
+    arrange(origin_region, 
+            destination_region,
+            origin_country_iso_code, 
+            destination_country_iso_code) %>%
+    mutate(origin_country_iso_code      = 
+             fct_inorder(origin_country_iso_code),
+           destination_country_iso_code =
+             fct_inorder(destination_country_iso_code))
+}
+
+tilePlottingFunction <- function(x){
+  ggplot(data = x,
+         aes(x = origin_country_iso_code, 
+             y = destination_country_iso_code)) +
+    geom_tile(aes(fill = scaling_factor)) +
+    theme_void() +
+    coord_equal() +
+    theme_fig2(world = F) +
+    theme(axis.text = element_text(size = 2),
+          axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+    xlab("Origin") +
+    ylab("Destination") +
+    scale_fill_gradient(low = covid_pal["Green"],
+                        high = covid_pal["Red"], 
+                        na.value = covid_pal["No data"],
+                        limits = c(0,1),
+                        name = "Scaling\nFactor")
+}

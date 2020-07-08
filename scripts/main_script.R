@@ -114,7 +114,7 @@ required_reduction <- imported_cases_and_incidence_together %>%
 
 figure_2_data <- barDataFunction(required_reduction)
 figure_2      <- barPlottingFunction(figure_2_data)
-  
+
 ggplot2::ggsave(here("outputs","figure_2.png"),
                 figure_2,
                 width = 9, 
@@ -133,9 +133,25 @@ figure_3_data <-
 
 
 figure_3 <- scatterPlottingFunction(figure_3_data)
-  
+
 ggplot2::ggsave(here("outputs","figure_3.png"),
                 figure_3,
                 width = 9, 
                 height = 6)
 
+
+
+figure_reduction_data <- tileDataFunction(may_travel_data)
+figure_reduction      <- tilePlottingFunction(figure_reduction_data)
+
+ggplot2::ggsave(filename = here("outputs", "figure_reduction.png"), 
+                plot = figure_reduction,
+                width = 9, height = 6, dpi = 600)
+
+figure_reduction_data_europe <- figure_reduction_data %>%
+  dplyr::filter(origin_region == "Europe" & destination_region == "Europe")
+figure_reduction_europe      <- tilePlottingFunction(figure_reduction_data_europe)
+
+ggplot2::ggsave(filename = here("outputs", "figure_reduction_europe.png"), 
+                plot = figure_reduction_europe,
+                width = 9, height = 6, dpi = 600)
