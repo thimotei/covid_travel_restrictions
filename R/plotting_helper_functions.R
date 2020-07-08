@@ -4,6 +4,10 @@ library(rgeos)
 library(mapproj)
 library(ggrepel)
 
+covid_pal <- c(magrittr::set_names(x = RColorBrewer::brewer.pal(3, "Purples"),
+                                   value = c("Green", "Amber", "Red")),
+               "No data" = rgb(red = 1, green = 0.9, blue = 0.9))
+
 theme_map <- function(world = FALSE) {
   ggplot2::theme_minimal() +
     ggplot2::theme(
@@ -82,11 +86,9 @@ mapPlottingFunction <- function(x)
     facet_wrap(~key, ncol = 2) +
     theme_map(world = TRUE) +
     ggplot2::scale_fill_manual(
-      values = c(magrittr::set_names(x = RColorBrewer::brewer.pal(3, "Purples"),
-                                     value = c("Green", "Amber", "Red")),
-                 "No data" = rgb(red = 1, green = 0.9, blue = 0.9)),
+      values = covid_pal,
       name = "Expected imported cases as percentage of estimated local incidence",
-      breaks = c("Green", "Amber", "Red", "No data"),
+      breaks = names(covid_pal),
       labels = c("Less than 1%", "Between 1% and 10%", "Greater than 10%", "No data")) +
     coord_sf(crs = 54009)
   
