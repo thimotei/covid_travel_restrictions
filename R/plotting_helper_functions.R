@@ -67,7 +67,7 @@ mapPlottingFunction <- function(x)
                     "B: Traveller levels scaled down by reductions in OpenSky May 2020" = "B",
                     "C: Traveller levels scaled down by 25%" = "C",
                     "D: Traveller levels scaled down by 50%" = "D")) %>%
-    dplyr::ungroup %>%
+    dplyr::ungroup(.) %>%
     dplyr::rename(risk_rating = value) %>%
     dplyr::mutate(risk_rating = factor(risk_rating, 
                                        levels = c("Green",

@@ -1,10 +1,9 @@
-here::here() %>% setwd()
 
-source("covid_travel_restrictions/R/flight_data_cleaning_utils.R")
-source("covid_travel_restrictions/R/data_helper_functions.R")
-source("covid_travel_restrictions/R/plotting_helper_functions.R")
+source(here("R","flight_data_cleaning_utils.R"))
+source(here("R","data_helper_functions.R"))
+source(here("R","plotting_helper_functions.R"))
 
-open_sky_may_2019   <- readr::read_csv(here("data","data/open_sky_may_2019.gz"))
+open_sky_may_2019   <- readr::read_csv(here("data","open_sky_may_2019.gz"))
 open_sky_may_2020   <- readr::read_csv(here("data","open_sky_may_2020.gz"))
 
 airport_lookup <- read.delim(here("data", "airports.dat"), sep = ",") %>%

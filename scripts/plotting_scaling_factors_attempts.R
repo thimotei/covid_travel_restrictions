@@ -29,6 +29,7 @@ new_el <- airport_network_2 %>% igraph::as_edgelist() %>%
   dplyr::select(-.)
 
 
+airport_lookup <- read.delim(here("data", "airports.dat"), sep = ",")
 
 airport_lookup_join_1 <- airport_lookup %>%
   dplyr::select(origin_country_iso_code = three_letter_code, lat, long)
@@ -84,7 +85,7 @@ flight_reduction_plot <- total_flights_may_2019_2020 %>%
   
   
 
-ggplot2::ggsave("covid_travel_restrictions/figures/flight_reduction.png",
+ggplot2::ggsave(here("outputs","flight_reduction.png"),
                 plot = flight_reduction_plot, 
                 width = 14,
                 height = 7,
