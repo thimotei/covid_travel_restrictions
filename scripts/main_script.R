@@ -33,7 +33,8 @@ may_travel_data <- oag_traveller_data_may_2020 %>%
 
 #--- using the scaled traveller numbers and prevalence to calculate expected number of imported cases
 #--- from all origin countries, to all destination countries
-prevalence_data_country_A <- globalPrevalenceEstimates() %>%
+prevalence_data <- globalPrevalenceEstimates()
+prevalence_data_country_A <- prevalence_data_country_A %>%
   dplyr::mutate(iso_code = countrycode::countrycode(country, "country.name", 'iso3c')) %>%
   dplyr::mutate(iso_code_dep = iso_code) %>% 
   dplyr::ungroup(country) %>%
@@ -60,7 +61,8 @@ imported_cases <- may_travel_data %>%
                       .funs = function(x){sum(x, na.rm=T)/30})
 
 # calculating the incidence in each destination country
-incidence_data_country_B <-  getAdjustedCaseDataNational() %>%
+adjusted_case_data       <- getAdjustedCaseDataNational()
+incidence_data_country_B <-  adjusted_case_data %>%
   dplyr::group_by(iso_code) %>%
   dplyr::filter(date > "2020-05-26" & date < "2020-06-26") %>%
   dplyr::mutate(incidence_estimate = new_cases_adjusted_mid/(1 - asymptomatic_prop)) %>%
