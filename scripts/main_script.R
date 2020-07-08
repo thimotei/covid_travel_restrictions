@@ -39,25 +39,37 @@ prevalence_data_country_A <- globalPrevalenceEstimates() %>%
   dplyr::ungroup(country) %>%
   dplyr::select(origin_country_iso_code = iso_code_dep, 
                 country,
-                prevalence = propCurrentlyInfMid) 
+                prevalence_mid = propCurrentlyInfMid,
+                prevalence_low = propCurrentlyInfLow,
+                prevalence_high = propCurrentlyInfHigh) 
 # if we drop NAs we lose Kosovo
 
-asymptomatic_prop     <- 0.5
+asymptomatic_prop_mid     <- 0.5
+asymptomatic_prop_low     <- 0.1
+asymptomatic_prop_high     <- 0.7
 traveller_reduction_1 <- 0.75
 traveller_reduction_2 <- 0.5
 
 imported_cases <- may_travel_data %>%
   dplyr::left_join(prevalence_data_country_A) %>%
-  dplyr::select(origin_country, destination_country, origin_country_iso_code, destination_country_iso_code, total_passengers, scaled_travellers, prevalence) %>%
-  dplyr::group_by(destination_country_iso_code) %>%
-  dplyr::mutate(expected_imported_cases_scenario_1  = total_passengers*prevalence,
-                expected_imported_cases_scenario_2  = scaled_travellers*prevalence,
-                expected_imported_cases_scenario_3  = total_passengers*prevalence*traveller_reduction_1,
-                expected_imported_cases_scenario_4  = total_passengers*prevalence*traveller_reduction_2)  %>%
-  dplyr::summarise(expected_imported_cases_scenario_1 = sum(expected_imported_cases_scenario_1, na.rm = TRUE)/30,
-                   expected_imported_cases_scenario_2 = sum(expected_imported_cases_scenario_2, na.rm = TRUE)/30,
-                   expected_imported_cases_scenario_3 = sum(expected_imported_cases_scenario_3, na.rm = TRUE)/30,
-                   expected_imported_cases_scenario_4 = sum(expected_imported_cases_scenario_4, na.rm = TRUE)/30)
+  dplyr::select(origin_country, destination_country, origin_country_iso_code, 
+                destination_country_iso_code, total_passengers, scaled_travellers, prevalence_mid, prevalence_low, prevalence_high) %>%
+  dplyr::group_by(destination_country_iso_code,
+                  destination_country) %>%
+  dplyr::mutate(expected_imported_cases_scenario_1_mid   = total_passengers*prevalence_mid,
+                expected_imported_cases_scenario_1_low   = total_passengers*prevalence_low,
+                expected_imported_cases_scenario_1_high  = total_passengers*prevalence_high,
+                expected_imported_cases_scenario_2_mid   = scaled_travellers*prevalence_mid,
+                expected_imported_cases_scenario_2_low   = scaled_travellers*prevalence_low,
+                expected_imported_cases_scenario_2_high  = scaled_travellers*prevalence_high,
+                expected_imported_cases_scenario_3_mid   = total_passengers*prevalence_mid*traveller_reduction_1,
+                expected_imported_cases_scenario_3_low   = total_passengers*prevalence_low*traveller_reduction_1,
+                expected_imported_cases_scenario_3_high  = total_passengers*prevalence_high*traveller_reduction_1,
+                expected_imported_cases_scenario_4_mid   = total_passengers*prevalence_mid*traveller_reduction_2,
+                expected_imported_cases_scenario_4_low   = total_passengers*prevalence_low*traveller_reduction_2,
+                expected_imported_cases_scenario_4_high  = total_passengers*prevalence_high*traveller_reduction_2) %>%
+  dplyr::summarise_at(.vars = vars(starts_with("expected_imported_cases_scenario_")),
+                      .funs = function(x){sum(x, na.rm=T)/30})
 
 # calculating the incidence in each destination country
 incidence_data_country_B <-  getAdjustedCaseDataNational() %>%
