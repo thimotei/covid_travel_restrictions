@@ -69,8 +69,8 @@ mapPlottingFunction <- function(x)
            key = fct_recode(key,
                             "A: Traveller levels same as May 2019" = "A",
                             "B: Traveller levels scaled down by reductions in OpenSky May 2020" = "B",
-                            "C: Traveller levels scaled down by 50%" = "C",
-                            "D: Traveller levels scaled down by 25%" = "D")) %>%
+                            "C: Traveller levels scaled down by 25%" = "C",
+                            "D: Traveller levels scaled down by 50%" = "D")) %>%
     ungroup %>%
     rename(risk_rating = value) %>%
     mutate(risk_rating = factor(risk_rating, levels = c("Green",
