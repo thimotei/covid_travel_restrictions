@@ -46,7 +46,9 @@ prevalence_data_country_A <- prevalence_data %>%
                 prevalence_high = propCurrentlyInfHigh) 
 # if we drop NAs we lose Kosovo
 
-asymptomatic_prop     <- 0.5
+asymptomatic_prop_mid     <- 0.5
+asymptomatic_prop_low     <- 0.1
+asymptomatic_prop_high     <- 0.7
 traveller_reduction_1 <- 0.75
 traveller_reduction_2 <- 0.5
 
@@ -77,10 +79,17 @@ adjusted_case_data       <- getAdjustedCaseDataNational()
 incidence_data_country_B <-  adjusted_case_data %>%
   dplyr::group_by(iso_code) %>%
   dplyr::filter(date > "2020-05-26" & date < "2020-06-26") %>%
-  dplyr::mutate(incidence_estimate = new_cases_adjusted_mid/(1 - asymptomatic_prop)) %>%
-  dplyr::summarise(new_cases_adjusted_mean = mean(incidence_estimate)) %>%
+  dplyr::mutate(incidence_estimate_mid = new_cases_adjusted_mid/(1 - asymptomatic_prop_mid),
+                incidence_estimate_low = new_cases_adjusted_low/(1 - asymptomatic_prop_low),
+                incidence_estimate_high = new_cases_adjusted_high/(1 - asymptomatic_prop_high)) %>%
+  dplyr::summarise(new_cases_adjusted_mean_mid  = mean(incidence_estimate_mid),
+                   new_cases_adjusted_mean_low  = mean(incidence_estimate_low),
+                   new_cases_adjusted_mean_high = mean(incidence_estimate_high)) %>%
   dplyr::mutate(destination_country_iso_code = iso_code) %>%
-  dplyr::select(destination_country_iso_code, new_cases_adjusted_mean)
+  dplyr::select(destination_country_iso_code,
+                new_cases_adjusted_mean_mid, 
+                new_cases_adjusted_mean_low, 
+                new_cases_adjusted_mean_high)
 
 imported_cases_and_incidence_together <- imported_cases %>%
   dplyr::left_join(incidence_data_country_B) %>%
