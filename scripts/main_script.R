@@ -79,12 +79,14 @@ adjusted_case_data       <- getAdjustedCaseDataNational()
 incidence_data_country_B <-  adjusted_case_data %>%
   dplyr::group_by(iso_code) %>%
   dplyr::filter(date > "2020-05-26" & date < "2020-06-26") %>%
-  dplyr::mutate(incidence_estimate_mid = new_cases_adjusted_mid/(1 - asymptomatic_prop_mid),
-                incidence_estimate_low = new_cases_adjusted_low/(1 - asymptomatic_prop_low),
-                incidence_estimate_high = new_cases_adjusted_high/(1 - asymptomatic_prop_high)) %>%
-  dplyr::summarise(new_cases_adjusted_mean_mid  = mean(incidence_estimate_mid),
-                   new_cases_adjusted_mean_low  = mean(incidence_estimate_low),
-                   new_cases_adjusted_mean_high = mean(incidence_estimate_high)) %>%
+  dplyr::mutate(
+    incidence_estimate_mid = new_cases_adjusted_mid/(1 - asymptomatic_prop_mid),
+    incidence_estimate_low = new_cases_adjusted_low/(1 - asymptomatic_prop_low),
+    incidence_estimate_high = new_cases_adjusted_high/(1 - asymptomatic_prop_high)) %>%
+  dplyr::summarise(
+    new_cases_adjusted_mean_mid  = mean(incidence_estimate_mid),
+    new_cases_adjusted_mean_low  = mean(incidence_estimate_low),
+    new_cases_adjusted_mean_high = mean(incidence_estimate_high)) %>%
   dplyr::mutate(destination_country_iso_code = iso_code) %>%
   dplyr::select(destination_country_iso_code,
                 new_cases_adjusted_mean_mid, 
@@ -95,8 +97,12 @@ imported_cases_and_incidence_together <- imported_cases %>%
   dplyr::left_join(incidence_data_country_B) %>%
   dplyr::rename_at(.vars = vars(starts_with("expected")), 
                    .funs = function(x){sub(pattern = "expected_", replacement = "", x)}) %>%
-  dplyr::mutate_at(.vars = vars(starts_with("imported")),
-                   .funs = list(~dplyr::na_if(./new_cases_adjusted_mean, "Inf"))) %>%
+  dplyr::mutate_at(.vars = vars(matches("imported.*\\_mid")),
+                   .funs = list(~dplyr::na_if(./new_cases_adjusted_mean_mid, "Inf"))) %>%
+  dplyr::mutate_at(.vars = vars(matches("imported.*\\_low")),
+                   .funs = list(~dplyr::na_if(./new_cases_adjusted_mean_high, "Inf"))) %>%
+  dplyr::mutate_at(.vars = vars(matches("imported.*\\_high")),
+                   .funs = list(~dplyr::na_if(./new_cases_adjusted_mean_low, "Inf"))) %>%
   tidyr::drop_na()  %>%
   dplyr::mutate_at(.vars = vars(starts_with("imported")),
                    .funs = list(~pmin(pmax(.,0),1)))
@@ -113,12 +119,20 @@ imported_cases_and_incidence_together_labels <-
 
 
 #--- making figure 1 - map of risk of imported cases
-figure_1 <- mapPlottingFunction(imported_cases_and_incidence_together_labels)
-
-ggplot2::ggsave(here("outputs","figure_1.png"),
-                figure_1,
-                width = 16, 
-                height = 8, units = "in", dpi = 300)
+list(`SI` = list(name = "SI",
+                 scenarios = c("low", "mid", "high")),
+     `main` = list(name = "main",
+                   scenarios = "mid")) %>%
+  purrr::map(
+    ~ggplot2::ggsave(filename = 
+                       here("outputs",
+                            paste("figure_1_",.x$name,".png",sep="")),
+                     plot = mapPlottingFunction(
+                       imported_cases_and_incidence_together_labels,
+                       scenarios = .x$scenarios),
+                     device = "png",
+                     width = 16, 
+                     height = 8, units = "in", dpi = 300))
 
 
 #--- bar plot of required reduction in flights

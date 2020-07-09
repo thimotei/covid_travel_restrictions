@@ -41,7 +41,7 @@ theme_fig2 <- function(world = FALSE) {
     )
 }
 
-mapPlottingFunction <- function(x)
+mapPlottingFunction <- function(x, scenarios = c("mid"))
 {
   
   world <- rnaturalearth::ne_countries(scale = "small", 
@@ -59,15 +59,25 @@ mapPlottingFunction <- function(x)
     # dplyr::rename(imported_cases_and_incidence_together,
     #               country = destination_country) %>%
     tidyr::gather(key, value, starts_with("imported")) %>%
-    dplyr::mutate(key = readr::parse_number(key),
-                  key = LETTERS[key],
-                  key = forcats::fct_recode(
-                    key,
-                    "A: Traveller levels same as May 2019" = "A",
-                    "B: Traveller levels scaled down by reductions in OpenSky May 2020" = "B",
-                    "C: Traveller levels scaled down by 25%" = "C",
-                    "D: Traveller levels scaled down by 50%" = "D")) %>%
-    dplyr::ungroup(.) %>%
+    dplyr::mutate(scenario = str_extract(key, "([^\\_]+$)")) %>%
+    dplyr::filter(scenario %in% scenarios) %>%
+    dplyr::mutate(scenario = factor(scenario,
+                                    levels = scenarios,
+                                    labels = stringr::str_to_title(scenarios)),
+                  key = readr::parse_number(key),
+                  key = LETTERS[key]) 
+  
+  if (length(scenarios) == 1L){
+    toPlot <- toPlot  %>% 
+      dplyr::mutate(key = forcats::fct_recode(
+                      key,
+                      "A: Traveller levels same as May 2019" = "A",
+                      "B: Traveller levels scaled down by reductions in OpenSky May 2020" = "B",
+                      "C: Traveller levels scaled down by 25%" = "C",
+                      "D: Traveller levels scaled down by 50%" = "D"))
+  }
+  
+  toPlot <- toPlot %>% dplyr::ungroup(.) %>%
     dplyr::rename(risk_rating = value) %>%
     dplyr::mutate(risk_rating = factor(risk_rating, 
                                        levels = c("Green",
@@ -79,8 +89,7 @@ mapPlottingFunction <- function(x)
   plotOutput <- ggplot(data = toPlot,
                        aes(geometry = geometry)) +
     geom_sf(aes(fill = risk_rating),
-            size = 0.25) +
-    facet_wrap(~key, ncol = 2) +
+            size = 0.25)  +
     theme_map(world = TRUE) +
     ggplot2::scale_fill_manual(
       values = covid_pal,
@@ -88,6 +97,14 @@ mapPlottingFunction <- function(x)
       breaks = names(covid_pal),
       labels = c("Less than 1%", "Between 1% and 10%", "Greater than 10%", "No data")) +
     coord_sf(crs = 54009)
+  
+  if (length(scenarios) == 1L){
+    plotOutput <- plotOutput +
+      facet_wrap(~key, ncol = 2)
+  } else {
+    plotOutput <- plotOutput +
+      facet_grid(key ~ scenario)
+  }
   
   plotOutput
   
@@ -229,8 +246,8 @@ tileDataFunction <- function(x){
 
 tilePlottingFunction <- function(x){
   ggplot2::ggplot(data = x,
-         aes(x = origin_country_iso_code, 
-             y = destination_country_iso_code)) +
+                  aes(x = origin_country_iso_code, 
+                      y = destination_country_iso_code)) +
     ggplot2::geom_tile(aes(fill = scaling_factor)) +
     ggplot2::theme_void() +
     ggplot2::coord_equal() +
