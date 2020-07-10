@@ -8,11 +8,9 @@ source(here("R","plotting_helper_functions.R"))
 
 #--- reading in the cleaned data files
 total_flights_may_2019_2020 <- 
-  readr::read_csv(here("data",
-                       "flight_reduction_scaling_factors.csv"))
+  readr::read_csv(here("data", "flight_reduction_scaling_factors.csv"))
 oag_traveller_data_may_2020 <- 
-  readr::read_csv(here("data",
-                       "oag_data_may_2019_2020"))
+  readr::read_csv(here("data", "oag_data_may_2019_2020"))
 
 #--- computing reduction in flights scaling factor for all pairs of countries
 may_travel_data <- oag_traveller_data_may_2020 %>%
@@ -52,25 +50,28 @@ asymptomatic_prop_high     <- 0.7
 traveller_reduction_1 <- 0.75
 traveller_reduction_2 <- 0.5
 
-imported_cases <- may_travel_data %>%
+imported_cases_pre_sum <- may_travel_data %>%
   dplyr::left_join(prevalence_data_country_A) %>%
   dplyr::select(origin_country, destination_country, origin_country_iso_code, 
                 destination_country_iso_code, total_passengers, scaled_travellers, 
                 prevalence_mid, prevalence_low, prevalence_high) %>%
   dplyr::group_by(destination_country_iso_code,
                   destination_country) %>%
-  dplyr::mutate(expected_imported_cases_scenario_1_mid   = total_passengers*prevalence_mid,
-                expected_imported_cases_scenario_1_low   = total_passengers*prevalence_low,
-                expected_imported_cases_scenario_1_high  = total_passengers*prevalence_high,
-                expected_imported_cases_scenario_2_mid   = scaled_travellers*prevalence_mid,
-                expected_imported_cases_scenario_2_low   = scaled_travellers*prevalence_low,
-                expected_imported_cases_scenario_2_high  = scaled_travellers*prevalence_high,
-                expected_imported_cases_scenario_3_mid   = total_passengers*prevalence_mid*traveller_reduction_1,
-                expected_imported_cases_scenario_3_low   = total_passengers*prevalence_low*traveller_reduction_1,
-                expected_imported_cases_scenario_3_high  = total_passengers*prevalence_high*traveller_reduction_1,
-                expected_imported_cases_scenario_4_mid   = total_passengers*prevalence_mid*traveller_reduction_2,
-                expected_imported_cases_scenario_4_low   = total_passengers*prevalence_low*traveller_reduction_2,
-                expected_imported_cases_scenario_4_high  = total_passengers*prevalence_high*traveller_reduction_2) %>%
+  dplyr::mutate(
+    expected_imported_cases_scenario_1_mid   = total_passengers*prevalence_mid,
+    expected_imported_cases_scenario_1_low   = total_passengers*prevalence_low,
+    expected_imported_cases_scenario_1_high  = total_passengers*prevalence_high,
+    expected_imported_cases_scenario_2_mid   = scaled_travellers*prevalence_mid,
+    expected_imported_cases_scenario_2_low   = scaled_travellers*prevalence_low,
+    expected_imported_cases_scenario_2_high  = scaled_travellers*prevalence_high,
+    expected_imported_cases_scenario_3_mid   = total_passengers*prevalence_mid*traveller_reduction_1,
+    expected_imported_cases_scenario_3_low   = total_passengers*prevalence_low*traveller_reduction_1,
+    expected_imported_cases_scenario_3_high  = total_passengers*prevalence_high*traveller_reduction_1,
+    expected_imported_cases_scenario_4_mid   = total_passengers*prevalence_mid*traveller_reduction_2,
+    expected_imported_cases_scenario_4_low   = total_passengers*prevalence_low*traveller_reduction_2,
+    expected_imported_cases_scenario_4_high  = total_passengers*prevalence_high*traveller_reduction_2) 
+
+imported_cases <- imported_cases_pre_sum %>%
   dplyr::summarise_at(.vars = vars(starts_with("expected_imported_cases_scenario_")),
                       .funs = function(x){sum(x, na.rm=T)/30})
 
@@ -139,55 +140,60 @@ list(`SI` = list(name = "SI",
 required_reduction <- imported_cases_and_incidence_together %>% 
   inner_join(imported_cases) %>%
   dplyr::select(iso_code = destination_country_iso_code,
-                expected_imported_cases_scenario_2,
-                new_cases_adjusted_mean, 
-                importation_per_incidence = imported_cases_scenario_2) %>%
-  dplyr::distinct() %>% 
-  dplyr::filter(importation_per_incidence > 0.01) %>%
-  dplyr::mutate(required_reduction_in_passengers = new_cases_adjusted_mean/expected_imported_cases_scenario_2*0.01) %>% 
-  dplyr::mutate(required_reduction_in_passengers = (1 - required_reduction_in_passengers)) %>%
+                starts_with("expected_imported_cases_scenario_2"),
+                starts_with("new_cases_adjusted_mean"), 
+                starts_with("imported_cases_scenario_2")) %>%
+  rename_at(.vars = vars(starts_with("imported_cases_scenario_2")),
+            .funs = ~sub(pattern = "imported_cases_scenario_2",
+                         replacement = "importation_per_incidence",
+                         x = .)) %>%
+  dplyr::filter(importation_per_incidence_mid > 0.01) %>%
+  dplyr::mutate(
+    required_reduction_in_passengers_low = 
+      (1 - 0.01*new_cases_adjusted_mean_mid/expected_imported_cases_scenario_2_low),
+    required_reduction_in_passengers_mid = 
+      (1 - 0.01*new_cases_adjusted_mean_mid/expected_imported_cases_scenario_2_mid),
+    required_reduction_in_passengers_high = 
+      (1 - 0.01*new_cases_adjusted_mean_mid/expected_imported_cases_scenario_2_high)) %>%
+  dplyr::mutate_at(.vars = vars(starts_with("required")),
+                   .funs = function(x){pmin(1,pmax(0,x))}) %>%
   dplyr::mutate(country = countrycode::countrycode(iso_code, "iso3c", "iso.name.en"))
 
 
 figure_2_data <- barDataFunction(required_reduction)
-figure_2      <- barPlottingFunction(figure_2_data)
+figure_2      <- barPlottingFunction(figure_2_data, interval = TRUE)
 
 ggplot2::ggsave(here("outputs","figure_2.png"),
                 figure_2,
                 width = 9, 
-                height = 6)
+                height = 4.5)
 
 
 figure_3_data <-
   figure_2_data %>%
-  mutate(label = cut(importation_per_incidence, breaks = c(0, 0.01, 0.1, 1),
-                     include.lowest = T, 
-                     labels = c("Green",
-                                "Amber",
-                                "Red"))) %>%
-  mutate(importation_per_incidence_trim =
-           pmin(0.995,pmax(0.005,importation_per_incidence)))
+  mutate_at(.vars = vars(starts_with("importation")),
+            .funs = list(trim = as.numeric,
+                         label = ~cut(.,
+                                      breaks = c(0, 0.01, 0.1, 1),
+                                      include.lowest = T, 
+                                      labels = c("Green",
+                                                 "Amber",
+                                                 "Red")))) %>%
+  mutate_at(.vars = vars(matches("trim")),
+            .funs = function(x){pmin(0.995, pmax(0.005,x))})
 
 
-figure_3 <- scatterPlottingFunction(figure_3_data)
+
+figure_3 <- scatterPlottingFunction(figure_3_data, interval = FALSE)
 
 ggplot2::ggsave(here("outputs","figure_3.png"),
-                figure_3,
+                figure_3, #+ facet_grid(importation_per_incidence_mid_label ~ region),
                 width = 9, 
                 height = 6)
 
-figure_reduction_data <- tileDataFunction(may_travel_data)
-figure_reduction      <- tilePlottingFunction(figure_reduction_data)
 
-ggplot2::ggsave(filename = here("outputs", "figure_reduction.png"), 
-                plot = figure_reduction,
-                width = 9, height = 6, dpi = 600)
 
-figure_reduction_data_europe <- figure_reduction_data %>%
-  dplyr::filter(origin_region == "Europe" & destination_region == "Europe")
-figure_reduction_europe      <- tilePlottingFunction(figure_reduction_data_europe)
+figure_2_data  %>% scatterTableFunction %>%
+  write_csv(here("outputs", "table_fig_3.csv"))
 
-ggplot2::ggsave(filename = here("outputs", "figure_reduction_europe.png"), 
-                plot = figure_reduction_europe +
-                  theme(axis.text = element_text(size = 4)),
-                width = 9, height = 6, dpi = 600)
+

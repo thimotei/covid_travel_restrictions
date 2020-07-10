@@ -130,3 +130,20 @@ base_gg <- ggplot() +
 
 
 
+## sam clifford attempts
+
+figure_reduction_data <- tileDataFunction(may_travel_data)
+figure_reduction      <- tilePlottingFunction(figure_reduction_data)
+
+ggplot2::ggsave(filename = here("outputs", "figure_reduction.png"), 
+                plot = figure_reduction,
+                width = 9, height = 6, dpi = 600)
+
+figure_reduction_data_europe <- figure_reduction_data %>%
+  dplyr::filter(origin_region == "Europe" & destination_region == "Europe")
+figure_reduction_europe      <- tilePlottingFunction(figure_reduction_data_europe)
+
+ggplot2::ggsave(filename = here("outputs", "figure_reduction_europe.png"), 
+                plot = figure_reduction_europe +
+                  theme(axis.text = element_text(size = 4)),
+                width = 9, height = 6, dpi = 600)
