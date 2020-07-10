@@ -193,6 +193,8 @@ globalPrevalenceEstimates <- function()
     dplyr::filter(Sys.Date() - 9 < date) %>% 
     dplyr::mutate(country = stringr::str_replace_all(country, "_", " ")) %>%
     dplyr::group_by(country) %>%
+    dplyr::mutate(cases = dplyr::case_when(cases < 0 & date == "2020-07-03" & country == "United Kingdom" ~ 674,
+                                           cases >= 0 ~ as.double(cases))) %>%
     dplyr::summarise(totalNewCases = sum(cases)) %>%
     dplyr::mutate(country = dplyr::case_when(country == "Cote dIvoire" ~ "Côte d'Ivoire",
                                              country != "Cote dIvoire" ~ country)) 
