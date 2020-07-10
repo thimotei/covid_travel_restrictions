@@ -197,3 +197,4 @@ figure_2_data  %>% scatterTableFunction %>%
   write_csv(here("outputs", "table_fig_3.csv"))
 
 
+source(here("scripts","importation_risks.R"))
