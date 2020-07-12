@@ -100,7 +100,7 @@ mapPlottingFunction <- function(x, scenarios = c("mid"))
       name = "Expected imported cases as percentage of estimated local incidence",
       breaks = names(covid_pal),
       labels = c("Less than 1%", "Between 1% and 10%", "Greater than 10%", "No data")) +
-    coord_sf(crs = 54009)
+    coord_sf(crs = sf::st_crs(54009))
   
   if (length(scenarios) == 1L){
     plotOutput <- plotOutput +
