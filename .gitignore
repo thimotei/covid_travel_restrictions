@@ -1,7 +1,8 @@
 data/raw_data
 
 .DS_Store
-
-outputs/
+.Rproj.user
 
 .Rhistory
+
+outputs/

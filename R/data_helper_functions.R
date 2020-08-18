@@ -133,7 +133,7 @@ globalPrevalenceEstimates <- function()
   countryCodesLookUp <- allDatRaw %>%
     dplyr::select(country, 
                   countryCode) %>% 
-    unique()
+    dplyr::distinct()
   
   
   data_path <- here("data/under_reporting_estimates/")
@@ -159,7 +159,7 @@ globalPrevalenceEstimates <- function()
     dplyr::mutate(country = dplyr::case_when(country == "Cote dIvoire" ~ "Côte d'Ivoire",
                                              country != "Cote dIvoire" ~ country)) 
   
-  
+  # can this not be replaced with a call to wpp
   worldPopulationEstimatesRaw <- readr::read_csv("https://population.un.org/wpp/Download/Files/1_Indicators%20(Standard)/CSV_FILES/WPP2019_TotalPopulationBySex.csv")
   
   worldPopulationEstimatesClean <- worldPopulationEstimatesRaw %>%
@@ -193,6 +193,8 @@ globalPrevalenceEstimates <- function()
     dplyr::filter(Sys.Date() - 9 < date) %>% 
     dplyr::mutate(country = stringr::str_replace_all(country, "_", " ")) %>%
     dplyr::group_by(country) %>%
+    dplyr::mutate(cases = dplyr::case_when(cases < 0 & date == "2020-07-03" & country == "United Kingdom" ~ 674,
+                                           cases >= 0 ~ as.double(cases))) %>%
     dplyr::summarise(totalNewCases = sum(cases)) %>%
     dplyr::mutate(country = dplyr::case_when(country == "Cote dIvoire" ~ "Côte d'Ivoire",
                                              country != "Cote dIvoire" ~ country)) 

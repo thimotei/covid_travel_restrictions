@@ -29,6 +29,7 @@ new_el <- airport_network_2 %>% igraph::as_edgelist() %>%
   dplyr::select(-.)
 
 
+airport_lookup <- read.delim(here("data", "airports.dat"), sep = ",")
 
 airport_lookup_join_1 <- airport_lookup %>%
   dplyr::select(origin_country_iso_code = three_letter_code, lat, long)
@@ -84,14 +85,14 @@ flight_reduction_plot <- total_flights_may_2019_2020 %>%
   
   
 
-ggplot2::ggsave("covid_travel_restrictions/figures/flight_reduction.png",
+ggplot2::ggsave(here("outputs","flight_reduction.png"),
                 plot = flight_reduction_plot, 
                 width = 14,
                 height = 7,
                 units = "in")
 
 el_coords <-
-  as_edgelist(g_2) %>%
+  as_edgelist(airport_network_2) %>%
   as_tibble() %>%
   full_join(node_coords, by = c("V1" = "value")) %>%
   full_join(node_coords, by = c("V2" = "value")) %>%
@@ -129,3 +130,20 @@ base_gg <- ggplot() +
 
 
 
+## sam clifford attempts
+
+figure_reduction_data <- tileDataFunction(may_travel_data)
+figure_reduction      <- tilePlottingFunction(figure_reduction_data)
+
+ggplot2::ggsave(filename = here("outputs", "figure_reduction.png"), 
+                plot = figure_reduction,
+                width = 9, height = 6, dpi = 600)
+
+figure_reduction_data_europe <- figure_reduction_data %>%
+  dplyr::filter(origin_region == "Europe" & destination_region == "Europe")
+figure_reduction_europe      <- tilePlottingFunction(figure_reduction_data_europe)
+
+ggplot2::ggsave(filename = here("outputs", "figure_reduction_europe.png"), 
+                plot = figure_reduction_europe +
+                  theme(axis.text = element_text(size = 4)),
+                width = 9, height = 6, dpi = 600)
