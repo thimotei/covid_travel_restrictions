@@ -75,10 +75,10 @@ mapPlottingFunction <- function(x, scenarios = c("mid"))
     toPlot <- toPlot  %>% 
       dplyr::mutate(key = forcats::fct_recode(
         key,
-        "A: Traveller levels same as May 2019" = "A",
+        "A: Traveller levels in May 2019" = "A",
         "B: Traveller levels scaled down by reductions in OpenSky May 2020" = "B",
-        "C: Traveller levels scaled down by 25%" = "C",
-        "D: Traveller levels scaled down by 50%" = "D"))
+        "C: Traveller levels in C, scaled down by 25%" = "C",
+        "D: Traveller levels in April 2020" = "D"))
   }
   
   toPlot <- toPlot %>% dplyr::ungroup(.) %>%
