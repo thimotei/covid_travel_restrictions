@@ -5,7 +5,7 @@ oxford_travel <- oxford_data %>%
   dplyr::select(CountryCode, Date, restriction_rating = "C8_International travel controls")  %>%
   dplyr::mutate(date = lubridate::ymd(Date)) %>%
   dplyr::select(-Date) %>%
-  dplyr::filter(lubridate::month(date) == 4) %>%
+  dplyr::filter(lubridate::month(date) == 5) %>%
   dplyr::group_by(CountryCode) %>%
   dplyr::rename(iso_code = CountryCode) %>%
   dplyr::group_by(iso_code) %>%    
@@ -15,3 +15,8 @@ oxford_travel_neat <- oxford_travel %>%
   dplyr::mutate(country = countrycode::countrycode(iso_code, "iso3c", "country.name")) %>%
   dplyr::select(country, iso_code, travel_restrictions_rating) %>%
   dplyr::arrange(country)
+
+totals <- oxford_travel_neat %>% 
+  dplyr::group_by(travel_restrictions_rating) %>%
+  dplyr::summarise(totals = n())
+

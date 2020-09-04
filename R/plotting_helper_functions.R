@@ -52,7 +52,7 @@ make_world <- function(){
     dplyr::filter(country != "Antarctica")
 }
 
-mapPlottingFunction <- function(x, scenarios = c("mid"))
+mapPlottingFunction <- function(x, scenarios = c("mid"), sensitivity = FALSE)
 {
   
   world <- make_world() %>%
@@ -71,14 +71,21 @@ mapPlottingFunction <- function(x, scenarios = c("mid"))
                   key = readr::parse_number(key),
                   key = LETTERS[key]) 
   
-  if (length(scenarios) == 1L){
+  if (length(scenarios) == 1L & sensitivity == FALSE){
     toPlot <- toPlot  %>% 
       dplyr::mutate(key = forcats::fct_recode(
         key,
-        "A: Traveller levels in May 2019" = "A",
+        "A: Traveller levels in April 2020" = "A",
         "B: Traveller levels scaled down by reductions in OpenSky May 2020" = "B",
-        "C: Traveller levels in C, scaled down by 25%" = "C",
-        "D: Traveller levels in April 2020" = "D"))
+        "C: Traveller levels in C, scaled down by 50%" = "C",
+        "D: Traveller levels in April 2019" = "D"))
+  }
+  if (sensitivity == TRUE){
+    toPlot <- toPlot  %>% 
+      dplyr::mutate(key = forcats::fct_recode(
+        key,
+        "A" = "A",
+        "B" = "B"))
   }
   
   toPlot <- toPlot %>% dplyr::ungroup(.) %>%
@@ -164,9 +171,11 @@ barDataFunction <- function(x){
     dplyr::mutate(country = forcats::fct_inorder(country)) %>% ungroup
 }
 
+#--- have changed scenario to 1 (used to be 2) as this is most plausible scenario 
+#--- after revising the data sources
 scatterPlottingFunction <- function(x, interval = FALSE){
   scatterPlot <- ggplot2::ggplot(data = x,
-                                 aes(x = expected_imported_cases_scenario_2_mid, 
+                                 aes(x = expected_imported_cases_scenario_1_mid, 
                                      y = importation_per_incidence_mid_trim)) +
     ggplot2::scale_x_continuous(trans = "log10", 
                                 expand = ggplot2::expansion(mult = c(0.1, 0.1))) +
@@ -321,9 +330,9 @@ scatterTableFunction <- function(x){
                             importation_per_incidence_high),
                   expected_imported_CI = 
                     sprintf("%0.1f (%0.1f, %0.1f)", 
-                            expected_imported_cases_scenario_2_mid,
-                            expected_imported_cases_scenario_2_low,
-                            expected_imported_cases_scenario_2_high),
+                            expected_imported_cases_scenario_1_mid,
+                            expected_imported_cases_scenario_1_low,
+                            expected_imported_cases_scenario_1_high),
                   new_cases_CI = 
                     sprintf("%0.0f (%0.0f, %0.0f)", 
                             new_cases_adjusted_mean_mid,

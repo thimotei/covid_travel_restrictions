@@ -209,5 +209,10 @@ p_together <- p1 + p2 + p3 + p4 + p5 + plot_layout(guides = "collect", design = 
 
 p_together
 
-ggplot2::ggsave("covid_travel_restrictions/figures/arbitrary_thresholds.png", p_together)
+ggplot2::ggsave("outputs/figure_S4.png",
+                p_together, 
+                width = 30,
+                height = 15,
+                units = "cm",
+                dpi = 500)
 

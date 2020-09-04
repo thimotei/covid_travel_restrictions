@@ -1,79 +1,5 @@
 # # new version of the function, much more streamlined
 # DEPRACTED - CHECK TO SEE IF NOT NEEDED BEFORE DELETING 
-# get_adjusted_case_data_national <- function()
-# {
-#   
-#   asymptomatic_mid <- 0.5
-#   asymptomatic_low <- 0.1
-#   asymptomatic_high <- 0.7
-#   
-#   ecdc_case_data <- read.csv("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv", na.strings = "", fileEncoding = "UTF-8-BOM") %>%
-#     dplyr::rename(new_cases = cases,
-#                   new_deaths = deaths,
-#                   country = countriesAndTerritories,
-#                   iso_code = countryterritoryCode) %>%
-#     dplyr::mutate(date = lubridate::dmy(dateRep)) %>%
-#     dplyr::filter(new_cases >= 0)
-#   
-#   under_reporting_path <- here("data/under_reporting_estimates/")
-#   files <- dir(path = under_reporting_path,
-#                pattern = "*.rds")
-#   
-#   under_reporting_raw_data <- dplyr::tibble(countryCode = files) %>% 
-#     dplyr::mutate(file_contents = purrr::map(countryCode, 
-#                                              ~ readRDS(file.path(under_reporting_path, .)))) %>% 
-#     tidyr::unnest(cols = c(file_contents)) %>%
-#     dplyr::mutate(countryCode = stringr::str_remove(countryCode, "result_")) %>% 
-#     dplyr::mutate(countryCode = stringr::str_remove(countryCode, ".rds")) %>%
-#     dplyr::group_by(countryCode) %>%
-#     dplyr::select(date, everything()) %>%
-#     dplyr::select(date, countryCode, everything()) %>%
-#     dplyr::group_by(countryCode) %>%
-#     dplyr::ungroup() %>%
-#     dplyr::rename(iso_code = countryCode)
-#   
-#   
-#   under_reporting_and_case_data <- ecdc_case_data %>% 
-#     dplyr::left_join(under_reporting_raw_data) %>%
-#     dplyr::group_by(country) %>%
-#     dplyr::arrange(country, date) %>%
-#     tidyr::drop_na() %>%
-#     dplyr::select(date, iso_code, country, new_cases, new_deaths, popData2019, estimate, lower, upper)
-#   
-#   
-#   dataOut <- under_reporting_and_case_data %>%
-#     dplyr::group_by(country) %>%
-#     dplyr::mutate(new_cases_smoothed             = zoo::rollmean(new_cases, k = 7, fill = NA),
-#                   new_cases_adjusted_mid         = new_cases/estimate,
-#                   new_cases_adjusted_low         = new_cases/upper,
-#                   new_cases_adjusted_high        = new_cases/lower,
-#                   new_cases_adjusted_smooth_mid  = zoo::rollmean(new_cases_adjusted_mid, k = 7, fill = NA),
-#                   new_cases_adjusted_smooth_low  = zoo::rollmean(new_cases_adjusted_low, k = 7, fill = NA),
-#                   new_cases_adjusted_smooth_high = zoo::rollmean(new_cases_adjusted_high, k = 7, fill = NA)) %>%
-#     dplyr::mutate(cumulative_incidence_mid  = cumsum(new_cases_adjusted_mid)/(popData2019*(1 - asymptomatic_mid)),
-#                   cumulative_incidence_low  = cumsum(new_cases_adjusted_low)/(popData2019*(1 - asymptomatic_low)),
-#                   cumulative_incidence_high = cumsum(new_cases_adjusted_high)/(popData2019*(1 - asymptomatic_high))) %>%
-#     dplyr::mutate(date_infection  = date - 9) %>%
-#     dplyr::mutate(cumulative_incidence_mid = dplyr::case_when(cumulative_incidence_mid >= 1 ~ 1,
-#                                                               cumulative_incidence_mid <= 0 ~ 0,
-#                                                               cumulative_incidence_mid > 0 & cumulative_incidence_mid < 1 ~ cumulative_incidence_mid)) %>%
-#     dplyr::mutate(cumulative_incidence_low = dplyr::case_when(cumulative_incidence_low > 1 ~ 1,
-#                                                               cumulative_incidence_low < 0 ~ 0,
-#                                                               cumulative_incidence_low > 0 & cumulative_incidence_low < 1 ~ cumulative_incidence_low)) %>%
-#     dplyr::mutate(cumulative_incidence_high = dplyr::case_when(cumulative_incidence_high > 1 ~ 1,
-#                                                                cumulative_incidence_high < 0 ~ 0,
-#                                                                cumulative_incidence_high > 0 & cumulative_incidence_high < 1 ~ cumulative_incidence_high)) %>%
-#     dplyr::ungroup() %>%
-#     dplyr::mutate(country = stringr::str_replace_all(country, "_", " ")) %>%
-#     dplyr::mutate(country = dplyr::case_when(country == "United States of America" ~ "USA",
-#                                              country != "United States of America" ~ country)) %>%
-#     dplyr::mutate(country = dplyr::case_when(country == "United Kingdom" ~ "UK",
-#                                              country != "United Kingdom" ~ country))
-#   
-#   
-#   return(dataOut)
-#   
-# }
 # 
 # #--- uses the sum of all new cases, after adjusting for under-reporting and asymptomatic infections
 # #--- as a proxy for prevalence. function performs this calculation for every country we have data for
@@ -194,6 +120,81 @@
 #   
 # }
 
+get_adjusted_case_data_national <- function()
+{
+  
+  asymptomatic_mid <- 0.5
+  asymptomatic_low <- 0.1
+  asymptomatic_high <- 0.7
+  
+  ecdc_case_data <- read.csv("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv", na.strings = "", fileEncoding = "UTF-8-BOM") %>%
+    dplyr::rename(new_cases = cases,
+                  new_deaths = deaths,
+                  country = countriesAndTerritories,
+                  iso_code = countryterritoryCode) %>%
+    dplyr::mutate(date = lubridate::dmy(dateRep)) %>%
+    dplyr::filter(new_cases >= 0)
+  
+  under_reporting_path <- here("data/under_reporting_estimates/")
+  files <- dir(path = under_reporting_path,
+               pattern = "*.rds")
+  
+  under_reporting_raw_data <- dplyr::tibble(countryCode = files) %>%
+    dplyr::mutate(file_contents = purrr::map(countryCode,
+                                             ~ readRDS(file.path(under_reporting_path, .)))) %>%
+    tidyr::unnest(cols = c(file_contents)) %>%
+    dplyr::mutate(countryCode = stringr::str_remove(countryCode, "result_")) %>%
+    dplyr::mutate(countryCode = stringr::str_remove(countryCode, ".rds")) %>%
+    dplyr::group_by(countryCode) %>%
+    dplyr::select(date, everything()) %>%
+    dplyr::select(date, countryCode, everything()) %>%
+    dplyr::group_by(countryCode) %>%
+    dplyr::ungroup() %>%
+    dplyr::rename(iso_code = countryCode)
+  
+  
+  under_reporting_and_case_data <- ecdc_case_data %>%
+    dplyr::left_join(under_reporting_raw_data) %>%
+    dplyr::group_by(country) %>%
+    dplyr::arrange(country, date) %>%
+    tidyr::drop_na() %>%
+    dplyr::select(date, iso_code, country, new_cases, new_deaths, popData2019, estimate, lower, upper)
+  
+  
+  data_out <- under_reporting_and_case_data %>%
+    dplyr::group_by(country) %>%
+    dplyr::mutate(new_cases_smoothed             = zoo::rollmean(new_cases, k = 7, fill = NA),
+                  new_cases_adjusted_mid         = new_cases/estimate,
+                  new_cases_adjusted_low         = new_cases/upper,
+                  new_cases_adjusted_high        = new_cases/lower,
+                  new_cases_adjusted_smooth_mid  = zoo::rollmean(new_cases_adjusted_mid, k = 7, fill = NA),
+                  new_cases_adjusted_smooth_low  = zoo::rollmean(new_cases_adjusted_low, k = 7, fill = NA),
+                  new_cases_adjusted_smooth_high = zoo::rollmean(new_cases_adjusted_high, k = 7, fill = NA)) %>%
+    dplyr::mutate(cumulative_incidence_mid  = cumsum(new_cases_adjusted_mid)/(popData2019*(1 - asymptomatic_mid)),
+                  cumulative_incidence_low  = cumsum(new_cases_adjusted_low)/(popData2019*(1 - asymptomatic_low)),
+                  cumulative_incidence_high = cumsum(new_cases_adjusted_high)/(popData2019*(1 - asymptomatic_high))) %>%
+    dplyr::mutate(date_infection  = date - 9) %>%
+    dplyr::mutate(cumulative_incidence_mid = dplyr::case_when(cumulative_incidence_mid >= 1 ~ 1,
+                                                              cumulative_incidence_mid <= 0 ~ 0,
+                                                              cumulative_incidence_mid > 0 & cumulative_incidence_mid < 1 ~ cumulative_incidence_mid)) %>%
+    dplyr::mutate(cumulative_incidence_low = dplyr::case_when(cumulative_incidence_low > 1 ~ 1,
+                                                              cumulative_incidence_low < 0 ~ 0,
+                                                              cumulative_incidence_low > 0 & cumulative_incidence_low < 1 ~ cumulative_incidence_low)) %>%
+    dplyr::mutate(cumulative_incidence_high = dplyr::case_when(cumulative_incidence_high > 1 ~ 1,
+                                                               cumulative_incidence_high < 0 ~ 0,
+                                                               cumulative_incidence_high > 0 & cumulative_incidence_high < 1 ~ cumulative_incidence_high)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(country = stringr::str_replace_all(country, "_", " ")) %>%
+    dplyr::mutate(country = dplyr::case_when(country == "United States of America" ~ "USA",
+                                             country != "United States of America" ~ country)) %>%
+    dplyr::mutate(country = dplyr::case_when(country == "United Kingdom" ~ "UK",
+                                             country != "United Kingdom" ~ country))
+  
+  
+  return(data_out)
+  
+}
+
 ecdc_data_function <- function()
 {
   ecdc_data <- read.csv("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv", na.strings = "", fileEncoding = "UTF-8-BOM") %>%
@@ -309,7 +310,7 @@ oag_2020_april_data_function <- function()
   
   #--- reading in 2019 and 2020 OAG data
   oag_2019_data_raw <- readr::read_csv(here::here("data", "raw_data/oag_flight_data_2019.csv"))
-  oag_2020_data_raw <- readr::read_csv(here::here("data", "flight_data_all_2020_Feb_Apr_final_monthly.csv"))
+  oag_2020_data_raw <- readr::read_csv(here::here("data", "raw_data/flight_data_all_2020_Feb_Apr_final_monthly.csv"))
   
   #--- cleaning the 2019 data
   oag_2019_data_neat <- oag_2019_data_raw %>% 
