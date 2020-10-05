@@ -42,7 +42,7 @@ importations_plot <-
     geom_sf(aes(geometry = geometry,
                 fill = pmin(p,0.5)),
             size = 0.1) +
-    facet_wrap(~countrylabel, ncol = 3) +
+    facet_wrap(~countrylabel, ncol = 4) +
     theme_map(world = TRUE) +
     scale_fill_gradient(low = "white", 
                         high = covid_pal["Red"],
@@ -62,9 +62,8 @@ importations_plot <-
                                   title.vjust = 0.75,
                                   title.hjust = 1,
                                   frame.colour = "black",
-                                  frame.linewidth = 1)) 
+                                  frame.linewidth = 1))
 
-as.list(c("png", "pdf")) %>%
-    purrr::map(~ggsave(plot = importations_plot, device = .x,
-                       filename = here("outputs",paste0("importations.", .x)), 
-                       width = 7, height = 7, units = "in", dpi = 600))
+ggsave(plot = importations_plot, device = "pdf", 
+       filename = here("outputs",paste0("figure_S3.pdf")),  
+       width = 30, height = 15, units = "in", dpi = 600)

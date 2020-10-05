@@ -1,51 +1,55 @@
-sirEquations <- function(time, variables, parameters) {
+seirEquations <- function(time, variables, parameters) {
   with(as.list(c(variables, parameters)), {
-    dS <- -r0*gamma*(S*I)/n
-    dI <- r0*gamma*(S*I)/n - gamma*I
+    dS <- -r0*gamma*(S*I)/nGlobal
+    dE <- (r0*gamma * S * I)/nGlobal - (delta * E)
+    dI <- (delta * E) - (gamma * I)
     dR <- gamma*I
-    return(list(c(dS, dI, dR)))
+    return(list(c(dS, dE, dI, dR)))
   })
 }
 
-meanInfectiousPeriod <- 5 # days
+mean_infectious_period <- 7 # days
+mean_latent_period <- 5
 r0Global    <- 3
-gammaGlobal <- 1/meanInfectiousPeriod
+gammaGlobal <- 1/mean_infectious_period
 nGlobal     <- 1000
-
+deltaGlobal <- 1/mean_latent_period
 
 parametersValues <- c(
   r0 = r0Global,        # average number of secondary infectious (/person)
   gamma  = gammaGlobal, # infectious contact rate (/person/day)
-  n = nGlobal - 1
+  n = nGlobal - 1,
+  delta = deltaGlobal
 )
 
 
 
 initialValues <- c(
   S = nGlobal - 1,  # number of susceptibles at time = 0
-  I =   1,  # number of infectious at time = 0
-  R =   0   # number of recovered (and immune) at time = 0
+  E = 1,
+  I = 0,  # number of infectious at time = 0
+  R = 0   # number of recovered (and immune) at time = 0
 )
 
-maxDays <- 35
+maxDays <- 90
 timeStep <- 0.01
 timeValues <- seq(0, maxDays, timeStep) # days
 
 
-sirValues <- deSolve::ode(
+seirValues <- deSolve::ode(
   y = initialValues,
   times = timeValues,
-  func = sirEquations,
+  func = seirEquations,
   parms = parametersValues 
 ) %>% dplyr::as_tibble()
 
 
-incidence_wider <- sirValues %>% 
+incidence_wider <- seirValues %>% 
   dplyr::mutate(incidence = (S*I/nGlobal)*gammaGlobal*r0Global) %>%
   dplyr::mutate(incidence_increase_lowest  = incidence*1.001,
                 incidence_increase_median  = incidence*1.01,
                 incidence_increase_upper = incidence*1.1) %>%
-  dplyr::select(-S, -I, -R)
+  dplyr::select(-S, -E, -I, -R)
 
 # incidence_longer <- incidence_wider %>%
 #   tidyr::pivot_longer(cols = c("incidence",
@@ -71,10 +75,10 @@ incidence_wider <- sirValues %>%
 #   ggplot2::guides(color = ggplot2::guide_legend("")) 
 
 
-restrictions_day_1 <- 16
-restrictions_day_2 <- 19
+restrictions_day_1 <- 50
+restrictions_day_2 <- 60
 
-incidence_wider_before_peak <- sirValues %>% 
+incidence_wider_before_peak <- seirValues %>% 
   dplyr::mutate(incidence = as.numeric((S*I/nGlobal)*gammaGlobal*r0Global)) %>%
   dplyr::mutate(incidence_increase_lowest = dplyr::case_when(time <  restrictions_day_1 ~ incidence*1.001, 
                                                              time >= restrictions_day_1  ~ incidence),
@@ -83,7 +87,7 @@ incidence_wider_before_peak <- sirValues %>%
                 incidence_increase_upper  = dplyr::case_when(time <  restrictions_day_1 ~ incidence*1.1,
                                                              time >= restrictions_day_1 ~ incidence))
 
-incidence_wider_after_peak <- sirValues %>% 
+incidence_wider_after_peak <- seirValues %>% 
   dplyr::mutate(incidence = as.numeric((S*I/nGlobal)*gammaGlobal*r0Global)) %>%
   dplyr::mutate(incidence_increase_lowest = dplyr::case_when(time <  restrictions_day_2 ~ incidence*1.001, 
                                                              time >= restrictions_day_2  ~ incidence),
@@ -157,7 +161,7 @@ p3 <- incidence_wider_after_peak %>%
                                         "10% increase"))
 
 p4 <- incidence_wider_before_peak %>%
-  dplyr::filter(time > 14 & time < 18) %>%
+  dplyr::filter(time > 40 & time < 55) %>%
   ggplot2::ggplot(ggplot2::aes(x = time)) +
   ggplot2::geom_ribbon(ggplot2::aes(ymin = 0, ymax = incidence, fill = "incidence"), alpha = 0.7, size = 0.2, color = "black") + 
   ggplot2::geom_ribbon(ggplot2::aes(ymin = incidence, ymax = incidence_increase_lowest, fill = "incidence_increase_lowest"), alpha = 0.7, size = 0.2, color = "black") + 
@@ -179,7 +183,7 @@ p4 <- incidence_wider_before_peak %>%
 
 
 p5 <- incidence_wider_after_peak %>%
-  dplyr::filter(time > 16 & time < 20) %>%
+  dplyr::filter(time > 50 & time < 65) %>%
   ggplot2::ggplot(ggplot2::aes(x = time)) +
   ggplot2::geom_ribbon(ggplot2::aes(ymin = 0, ymax = incidence, fill = "incidence"), alpha = 0.7, size = 0.2, color = "black") + 
   ggplot2::geom_ribbon(ggplot2::aes(ymin = incidence, ymax = incidence_increase_lowest, fill = "incidence_increase_lowest"), alpha = 0.7, size = 0.2, color = "black") + 
@@ -209,7 +213,7 @@ p_together <- p1 + p2 + p3 + p4 + p5 + plot_layout(guides = "collect", design = 
 
 p_together
 
-ggplot2::ggsave("outputs/figure_S4.png",
+ggplot2::ggsave("outputs/figure_S4.pdf",
                 p_together, 
                 width = 30,
                 height = 15,

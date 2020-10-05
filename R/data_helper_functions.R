@@ -1,125 +1,3 @@
-# # new version of the function, much more streamlined
-# DEPRACTED - CHECK TO SEE IF NOT NEEDED BEFORE DELETING 
-# 
-# #--- uses the sum of all new cases, after adjusting for under-reporting and asymptomatic infections
-# #--- as a proxy for prevalence. function performs this calculation for every country we have data for
-# globalPrevalenceEstimates <- function()
-# {
-#   
-#   asymptomaticEstimateMid <- 0.50
-#   asymptomaticEstimateLow <- 0.10
-#   asymptomaticEstimateHigh <- 0.70
-#   
-#   allDatRaw <- read.csv("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv", na.strings = "", fileEncoding = "UTF-8-BOM") %>%
-#     dplyr::rename(date = dateRep, 
-#                   country = countriesAndTerritories,
-#                   countryCode = countryterritoryCode) %>%
-#     dplyr::mutate(date = lubridate::dmy(date))
-#   
-#   countryCodesLookUp <- allDatRaw %>%
-#     dplyr::select(country, 
-#                   countryCode) %>% 
-#     dplyr::distinct()
-#   
-#   
-#   data_path <- here("data/under_reporting_estimates/")
-#   files <- dir(path = data_path,
-#                pattern = "*.rds")
-#   
-#   dataTmp <- dplyr::tibble(countryCode = files) %>% 
-#     dplyr::mutate(file_contents = purrr::map(countryCode, 
-#                                              ~ readRDS(file.path(data_path, .)))
-#                   
-#     ) %>% 
-#     tidyr::unnest(cols = c(file_contents)) %>%
-#     dplyr::mutate(countryCode = stringr::str_remove(countryCode, "result_")) %>% 
-#     dplyr::mutate(countryCode = stringr::str_remove(countryCode, ".rds")) %>%
-#     dplyr::group_by(countryCode) %>%
-#     dplyr::select(date, everything()) %>%
-#     dplyr::left_join(countryCodesLookUp) %>%
-#     dplyr::left_join(allDatRaw) %>%
-#     dplyr::select(date, country, countryCode, everything()) %>%
-#     dplyr::group_by(countryCode) %>%
-#     dplyr::ungroup() %>%
-#     dplyr::mutate(country = stringr::str_replace_all(country, "_", " ")) %>%
-#     dplyr::mutate(country = dplyr::case_when(country == "Cote dIvoire" ~ "Côte d'Ivoire",
-#                                              country != "Cote dIvoire" ~ country)) 
-#   
-#   # can this not be replaced with a call to wpp
-#   worldPopulationEstimatesRaw <- readr::read_csv("https://population.un.org/wpp/Download/Files/1_Indicators%20(Standard)/CSV_FILES/WPP2019_TotalPopulationBySex.csv")
-#   
-#   worldPopulationEstimatesClean <- worldPopulationEstimatesRaw %>%
-#     dplyr::filter(Variant == "Medium" & Time == "2020") %>% 
-#     dplyr::select(country = Location, population = PopTotal) %>%
-#     dplyr::mutate(population = population*1000) %>%
-#     dplyr::mutate(country = dplyr::case_when(country == "Bolivia (Plurinational State of)" ~ "Bolivia",
-#                                              country != "Bolivia (Plurinational State of)" ~ country)) %>%
-#     dplyr::mutate(country = dplyr::case_when(country == "Iran (Islamic Republic of)" ~ "Iran",
-#                                              country != "Iran (Islamic Republic of)" ~ country)) %>%
-#     dplyr::mutate(country = dplyr::case_when(country == "Republic of Moldova" ~ "Moldova",
-#                                              country != "Republic of Moldova" ~ country)) %>%
-#     dplyr::mutate(country = dplyr::case_when(country == "Russian Federation" ~ "Russia",
-#                                              country != "Russian Federation" ~ country)) %>%
-#     dplyr::mutate(country = dplyr::case_when(country == "Sint Maarten (Dutch part)" ~ "Sint Maarten",
-#                                              country != "Sint Maarten (Dutch part)" ~ country)) %>%
-#     dplyr::mutate(country = dplyr::case_when(country == "Republic of Korea" ~ "South Korea",
-#                                              country != "Republic of Korea" ~ country)) %>%
-#     dplyr::mutate(country = dplyr::case_when(country == "Venezuela (Bolivarian Republic of)" ~ "Venezuela",
-#                                              country != "Venezuela (Bolivarian Republic of)" ~ country)) %>%
-#     rbind(c("Kosovo", 1810366))
-#   
-#   allTogether <- dataTmp %>% 
-#     dplyr::left_join(worldPopulationEstimatesClean) %>%
-#     dplyr::group_by(country) %>%
-#     dplyr::select(date, country, countryCode, cases, estimate, lower, upper, population) %>%
-#     dplyr::arrange(country, date)
-#   
-#   
-#   newCaseEstimatesRecent <- allDatRaw %>%
-#     dplyr::filter(Sys.Date() - 9 < date) %>% 
-#     dplyr::mutate(country = stringr::str_replace_all(country, "_", " ")) %>%
-#     dplyr::group_by(country) %>%
-#     dplyr::mutate(cases = dplyr::case_when(cases < 0 & date == "2020-07-03" & country == "United Kingdom" ~ 674,
-#                                            cases >= 0 ~ as.double(cases))) %>%
-#     dplyr::summarise(totalNewCases = sum(cases)) %>%
-#     dplyr::mutate(country = dplyr::case_when(country == "Cote dIvoire" ~ "Côte d'Ivoire",
-#                                              country != "Cote dIvoire" ~ country)) 
-#   
-#   
-#   caseEstimatesTotal <- allDatRaw %>%
-#     dplyr::mutate(country = stringr::str_replace_all(country, "_", " ")) %>%
-#     dplyr::group_by(country) %>%
-#     dplyr::summarise(totalCases = sum(cases)) %>%
-#     dplyr::mutate(country = dplyr::case_when(country == "Cote dIvoire" ~ "Côte d'Ivoire",
-#                                              country != "Cote dIvoire" ~ country)) 
-#   
-#   
-#   recentUnderreportingEstimates <- allTogether %>%
-#     dplyr::filter(date == max(date)) %>% 
-#     dplyr::group_by(country) %>%
-#     dplyr::select(estimate, lower, upper)
-#   
-#   # turn off scientific notation
-#   options(scipen=999)
-#   
-#   mostRecentEstimatesTogether <- recentUnderreportingEstimates %>% 
-#     dplyr::left_join(newCaseEstimatesRecent) %>%
-#     dplyr::right_join(caseEstimatesTotal) %>%
-#     dplyr::left_join(worldPopulationEstimatesClean) %>%
-#     tidyr::drop_na() %>%
-#     dplyr::mutate(population = as.numeric(population)) %>%
-#     dplyr::mutate(propCurrentlyInfMid  = (totalNewCases/(estimate*asymptomaticEstimateMid)/population),
-#                   propCurrentlyInfLow  = (totalNewCases/(upper*(1 - asymptomaticEstimateLow))/population),
-#                   propCurrentlyInfHigh = (totalNewCases/(lower*(1 - asymptomaticEstimateHigh))/population)) %>%
-#     dplyr::mutate(propCurrentlyInfMid = signif(propCurrentlyInfMid, 2),
-#                   propCurrentlyInfLow = signif(propCurrentlyInfLow, 2),
-#                   propCurrentlyInfHigh = signif(propCurrentlyInfHigh, 2)) %>%
-#     dplyr::select(country, totalCases, totalNewCases, estimate, lower, upper, population, propCurrentlyInfMid, propCurrentlyInfLow, propCurrentlyInfHigh)
-#   
-#   return(mostRecentEstimatesTogether)
-#   
-# }
-
 get_adjusted_case_data_national <- function()
 {
   
@@ -237,6 +115,7 @@ under_reporting_data_function <- function(ecdc_data_arg)
 
 global_prevalence_estimates_function <- function(ecdc_data_arg, under_reporting_data_arg, date_arg)
 {
+  
   date_arg <- as.Date(date_arg)
   if(date_arg - Sys.Date() > 13)
   {
@@ -247,7 +126,6 @@ global_prevalence_estimates_function <- function(ecdc_data_arg, under_reporting_
     date_arg_new <- Sys.Date() - 13
     
   }
-  
   
   asymptomatic_estimate_mid <- 0.50
   asymptomatic_estimate_low <- 0.10
@@ -265,7 +143,7 @@ global_prevalence_estimates_function <- function(ecdc_data_arg, under_reporting_
   
   under_reporting_estimates_at_date <- under_reporting_data_arg %>%
     dplyr::group_by(iso_code) %>%
-    dplyr::filter(date == date_arg_new - 13)
+    dplyr::filter(date == date_arg - 13)
   
   most_recent_estimates_together <- under_reporting_estimates_at_date %>% 
     dplyr::left_join(new_case_estimates_recent) %>%

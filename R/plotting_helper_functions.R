@@ -75,10 +75,10 @@ mapPlottingFunction <- function(x, scenarios = c("mid"), sensitivity = FALSE)
     toPlot <- toPlot  %>% 
       dplyr::mutate(key = forcats::fct_recode(
         key,
-        "A: Traveller levels in April 2020" = "A",
-        "B: Traveller levels scaled down by reductions in OpenSky May 2020" = "B",
-        "C: Traveller levels in C, scaled down by 50%" = "C",
-        "D: Traveller levels in April 2019" = "D"))
+        "A: May 2019 (OAG) scaled by April 2020/April 2019 (OAG)" = "A",
+        "B: May 2019 (OAG) scaled by OpenSky reduction" = "B",
+        "C: May 2019 (OAG) scaled by OpenSky reduction and reduced further 50%" = "C",
+        "D: May 2019 (OAG)" = "D"))
   }
   if (sensitivity == TRUE){
     toPlot <- toPlot  %>% 
@@ -96,6 +96,12 @@ mapPlottingFunction <- function(x, scenarios = c("mid"), sensitivity = FALSE)
                                                   "Red"), ordered = T),
                   risk_rating = forcats::fct_explicit_na(risk_rating,
                                                          na_level = "No data"))
+
+  key.labs <- c("Scenario A", "Scenario A (50% under-ascertainment)", "Scenario A (80% under-ascertainment)")
+  names(key.labs) <- c("A", "B", "C")
+    
+  scenario.labs <- c("Lower 95% CrI", "Median", "Upper 95% CrI")
+  names(scenario.labs) <- c("Low", "Mid", "High")
   
   plotOutput <- ggplot(data = toPlot,
                        aes(geometry = geometry)) +
@@ -112,9 +118,12 @@ mapPlottingFunction <- function(x, scenarios = c("mid"), sensitivity = FALSE)
   if (length(scenarios) == 1L){
     plotOutput <- plotOutput +
       facet_wrap(~key, ncol = 2)
-  } else {
+  } 
+  else {
     plotOutput <- plotOutput +
-      facet_grid(key ~ scenario)
+      facet_grid(scenario ~ key,
+                 labeller = labeller(scenario = scenario.labs,
+                                     key = key.labs))
   }
   
   plotOutput
@@ -224,7 +233,7 @@ scatterPlottingFunction <- function(x, interval = FALSE){
     theme_fig2(world = TRUE) +
     ggplot2::xlab("Expected number of imported cases") +
     ggplot2::ylab("Expected number of imported cases\nas percentage of local incidence") +
-    ggplot2::ggtitle(label    = "Traveller levels scaled down by reductions in OpenSky May 2020",
+    ggplot2::ggtitle(label    = "Traveller numbers using OAG data for April 2020",
                      subtitle = "Countries with imported cases at least 1% of estimated local incidence") +
     ggplot2::annotation_logticks(sides = "b") +
     ggplot2::scale_fill_manual(
