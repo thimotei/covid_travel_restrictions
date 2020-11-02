@@ -1,7 +1,7 @@
 # The effect of internationally imported cases on internal spread of COVID-19: a mathematical modelling study
 
 ## Contents in the repository
-The repo contains all the functions and scripts required to reproduce the results of (this paper)[https://www.medrxiv.org/content/10.1101/2020.07.12.20152298v1]
+The repo contains all the functions and scripts required to reproduce the results of [this paper](https://www.medrxiv.org/content/10.1101/2020.07.12.20152298v1)
 and to run user-specific analyses, with for example, private flight data and/or prevalence & incidence estimates. In the absense of prevalence and incidence
 estimats, the analysis defaults to using September 2020 estimates as per the paper. The repo does not contain the OAG air passenger volume dataset, as this
 is not publicly available and must be purchased. However, we have set up a pipeline for users with their own flight data for any number of countries that runs 
