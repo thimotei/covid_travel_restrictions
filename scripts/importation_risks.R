@@ -18,10 +18,10 @@ importations_mask <- inner_join(world %>%
                                                    destination = "country.name"))
 
 importations <- 
-    dplyr::select(ungroup(imported_cases_pre_sum),
+    dplyr::select(ungroup(imported_cases_september_pre_sum),
                   origin_country_iso_code,
                   destination_country_iso_code,
-                  value = expected_imported_cases_scenario_2_mid) %>%
+                  value = expected_imported_cases_scenario_4_mid) %>%
     {left_join(importation_map, .)} %>%
     mutate(value = ifelse(origin_country_iso_code == destination_country_iso_code,
                           NA,

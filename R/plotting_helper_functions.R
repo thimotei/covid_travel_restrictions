@@ -3,6 +3,11 @@ covid_pal <- c(magrittr::set_names(x = RColorBrewer::brewer.pal(3, "Purples"),
                                    value = c("Green", "Amber", "Red")),
                "No data" = rgb(red = 1, green = 0.9, blue = 0.9))
 
+
+covid_pal_user <- c(magrittr::set_names(x = RColorBrewer::brewer.pal(3, "Purples"),
+                                   value = c("Green", "Amber", "Red")),
+               "No data" = rgb(red = 1, green = 1, blue = 1))
+
 theme_map <- function(world = FALSE) {
   ggplot2::theme_minimal() +
     ggplot2::theme(
@@ -75,10 +80,10 @@ mapPlottingFunction <- function(x, scenarios = c("mid"), sensitivity = FALSE)
     toPlot <- toPlot  %>% 
       dplyr::mutate(key = forcats::fct_recode(
         key,
-        "A: May 2019 (OAG) scaled by April 2020/April 2019 (OAG)" = "A",
-        "B: May 2019 (OAG) scaled by OpenSky reduction" = "B",
-        "C: May 2019 (OAG) scaled by OpenSky reduction and reduced further 50%" = "C",
-        "D: May 2019 (OAG)" = "D"))
+        "A: May 2019 (OAG)" = "A",
+        "B: May 2020 (OAG), estimated using OpenSky reduction" = "B",
+        "C: September 2019 (OAG)" = "C",
+        "D: September 2020 (OAG), estimated using OpenSky reduction" = "D"))
   }
   if (sensitivity == TRUE){
     toPlot <- toPlot  %>% 
@@ -97,7 +102,7 @@ mapPlottingFunction <- function(x, scenarios = c("mid"), sensitivity = FALSE)
                   risk_rating = forcats::fct_explicit_na(risk_rating,
                                                          na_level = "No data"))
 
-  key.labs <- c("Scenario A", "Scenario A (50% under-ascertainment)", "Scenario A (80% under-ascertainment)")
+  key.labs <- c("Scenario D", "Scenario D (50% under-ascertainment)", "Scenario D (80% under-ascertainment)")
   names(key.labs) <- c("A", "B", "C")
     
   scenario.labs <- c("Lower 95% CrI", "Median", "Upper 95% CrI")
@@ -115,21 +120,153 @@ mapPlottingFunction <- function(x, scenarios = c("mid"), sensitivity = FALSE)
       labels = c("Less than 1%", "Between 1% and 10%", "Greater than 10%", "No data")) +
     coord_sf(crs = sf::st_crs(54009))
   
-  if (length(scenarios) == 1L){
-    plotOutput <- plotOutput +
+  if (length(scenarios) == 1L)
+  {
+    plotOutput <- plotOutput + 
       facet_wrap(~key, ncol = 2)
   } 
-  else {
+  else 
+  {
     plotOutput <- plotOutput +
       facet_grid(scenario ~ key,
                  labeller = labeller(scenario = scenario.labs,
                                      key = key.labs))
   }
-  
+  # ADDING ARROW, NOT SURE ITS WORTH IT
+  # if (length(scenarios) == 1L & sensitivity == FALSE)
+  # {
+  #   plotOutput <- plotOutput +
+  #     geom_segment(inherit.aes = FALSE, aes(x = -20, y = -20, xend = 20, yend = -20), 
+  #     arrow = arrow(length = unit(0.5, "cm")))
+  # }
+  # else 
+  # {
+  #   plotOutput
+  # }
   plotOutput
   
 }
 
+mapPlottingFunctionTravelVolumeSensitivity <- function(x, scenarios = c("mid"))
+{
+  
+  world <- make_world() %>%
+    dplyr::left_join(x, by = "iso_code") %>%
+    dplyr::select(country, iso_code, geometry)
+  
+  toPlot <- dplyr::full_join(x, world) %>%
+    # dplyr::rename(imported_cases_and_incidence_together,
+    #               country = destination_country) %>%
+    tidyr::gather(key, value, starts_with("imported")) %>%
+    dplyr::mutate(scenario = str_extract(key, "([^\\_]+$)")) %>%
+    dplyr::filter(scenario %in% scenarios) %>%
+    dplyr::mutate(scenario = factor(scenario,
+                                    levels = scenarios,
+                                    labels = stringr::str_to_title(scenarios)),
+                  key = readr::parse_number(key),
+                  key = LETTERS[key]) 
+  
+  # if (length(scenarios) == 1L & sensitivity == FALSE){
+  #   toPlot <- toPlot  %>% 
+  #     dplyr::mutate(key = forcats::fct_recode(
+  #       key,
+  #       "A: May 2020 (OAG), estimated using OpenSky reduction" = "A",
+  #       "B: September 2019 (OAG)" = "B"))
+  # }
+  # if (sensitivity == TRUE){
+  #   toPlot <- toPlot  %>% 
+  #     dplyr::mutate(key = forcats::fct_recode(
+  #       key,
+  #       "A" = "A",
+  #       "B" = "B"))
+  # }
+  
+  toPlot <- toPlot %>% dplyr::ungroup(.) %>%
+    dplyr::rename(risk_rating = value) %>%
+    dplyr::mutate(risk_rating = factor(risk_rating, 
+                                       levels = c("Green",
+                                                  "Amber",
+                                                  "Red"), ordered = T),
+                  risk_rating = forcats::fct_explicit_na(risk_rating,
+                                                         na_level = "No data"))
+  
+  key.labs <- c("A: May 2020 (OAG), estimated using OpenSky reduction and reduced by 25%", 
+                "B: May 2020 (OAG), estimated using OpenSky reduction and reduced by 50%")
+  names(key.labs) <- c("A", "B")
+  
+  scenario.labs <- c("Lower 95% CrI", "Median", "Upper 95% CrI")
+  names(scenario.labs) <- c("Low", "Mid", "High")
+  
+  plotOutput <- ggplot(data = toPlot,
+                       aes(geometry = geometry)) +
+    geom_sf(aes(fill = risk_rating),
+            size = 0.25)  +
+    theme_map(world = TRUE) +
+    ggplot2::scale_fill_manual(
+      values = covid_pal,
+      name = "Expected imported cases as percentage of estimated local incidence",
+      breaks = names(covid_pal),
+      labels = c("Less than 1%", "Between 1% and 10%", "Greater than 10%", "No data")) +
+    coord_sf(crs = sf::st_crs(54009))
+  
+  # if (length(scenarios) == 1L)
+  # {
+  #   plotOutput <- plotOutput + 
+  #     facet_wrap(~key, ncol = 2)
+  # } 
+  # else 
+  # {
+    plotOutput <- plotOutput +
+      facet_grid(scenario ~ key,
+                 labeller = labeller(scenario = scenario.labs,
+                                     key = key.labs))
+  # }
+  # ADDING ARROW, NOT SURE ITS WORTH IT
+  # if (length(scenarios) == 1L & sensitivity == FALSE)
+  # {
+  #   plotOutput <- plotOutput +
+  #     geom_segment(inherit.aes = FALSE, aes(x = -20, y = -20, xend = 20, yend = -20), 
+  #     arrow = arrow(length = unit(0.5, "cm")))
+  # }
+  # else 
+  # {
+  #   plotOutput
+  # }
+  plotOutput
+  
+}
+
+mapPlottingFunctionUserDefined <- function(x)
+{
+  
+  world <- make_world() %>%
+    dplyr::left_join(x, by = "iso_code") %>%
+    dplyr::select(country, iso_code, geometry)
+  
+  toPlot <- dplyr::full_join(x, world) %>%
+    tidyr::gather(key, value, starts_with("imported"))  %>%
+    dplyr::ungroup(.) %>%
+    dplyr::rename(risk_rating = value) %>%
+    dplyr::mutate(risk_rating = factor(risk_rating, 
+                                       levels = c("Green",
+                                                  "Amber",
+                                                  "Red"), ordered = T))
+  
+  plotOutput <- ggplot(data = toPlot,
+                       aes(geometry = geometry)) +
+    geom_sf(aes(fill = risk_rating),
+            size = 0.25)  +
+    theme_map(world = TRUE) +
+    ggplot2::scale_fill_manual(
+      values = covid_pal_user,
+      name = "Expected imported cases as percentage of estimated local incidence",
+      breaks = names(covid_pal_user),
+      labels = c("Less than 1%", "Between 1% and 10%", "Greater than 10%", "No data")) +
+    coord_sf(crs = sf::st_crs(54009))
+  
+  plotOutput 
+
+}
 
 barPlottingFunction <- function(x, interval = FALSE){
   
@@ -142,7 +279,8 @@ barPlottingFunction <- function(x, interval = FALSE){
                                                        hjust = 1, 
                                                        vjust =0.5)) +
     ggplot2::scale_y_continuous(labels = scales::percent) + 
-    ggplot2::labs(x = "Country", y = "Required reduction in passengers to\nreduce imported cases to less than 1% of\nestimated local incidence") +
+    ggplot2::labs(x = "Country",
+                  y = "Required reduction in air travel to\nreduce risk rating to 1% for all\ncountries with Rt estimates \nbetween 0.95 and 1.05 (inclusive)") +
     ggplot2::facet_grid(. ~ region_abb, scales = "free_x", 
                         space = "free_x") 
   
@@ -184,7 +322,7 @@ barDataFunction <- function(x){
 #--- after revising the data sources
 scatterPlottingFunction <- function(x, interval = FALSE){
   scatterPlot <- ggplot2::ggplot(data = x,
-                                 aes(x = expected_imported_cases_scenario_1_mid, 
+                                 aes(x = expected_imported_cases_scenario_4_mid, 
                                      y = importation_per_incidence_mid_trim)) +
     ggplot2::scale_x_continuous(trans = "log10", 
                                 expand = ggplot2::expansion(mult = c(0.1, 0.1))) +
@@ -205,12 +343,12 @@ scatterPlottingFunction <- function(x, interval = FALSE){
   
   if (interval){
     scatterPlot <- scatterPlot +
-      geom_segment(aes(x    = expected_imported_cases_scenario_2_low,
-                       xend = expected_imported_cases_scenario_2_high,
+      geom_segment(aes(x    = expected_imported_cases_scenario_4_low,
+                       xend = expected_imported_cases_scenario_4_high,
                        y    = importation_per_incidence_mid_trim,
                        yend = importation_per_incidence_mid_trim)) +
-      geom_segment(aes(x    = expected_imported_cases_scenario_2_mid,
-                       xend = expected_imported_cases_scenario_2_mid,
+      geom_segment(aes(x    = expected_imported_cases_scenario_4_mid,
+                       xend = expected_imported_cases_scenario_4_mid,
                        y    = importation_per_incidence_low_trim,
                        yend = importation_per_incidence_high_trim
       )) +
@@ -233,8 +371,8 @@ scatterPlottingFunction <- function(x, interval = FALSE){
     theme_fig2(world = TRUE) +
     ggplot2::xlab("Expected number of imported cases") +
     ggplot2::ylab("Expected number of imported cases\nas percentage of local incidence") +
-    ggplot2::ggtitle(label    = "Traveller numbers using OAG data for April 2020",
-                     subtitle = "Countries with imported cases at least 1% of estimated local incidence") +
+    ggplot2::ggtitle(label    = "September 2020 traveller estimates, scaled by OpenSky flight data",
+                     subtitle = "Countries with imported cases at least 1% of estimated local incidence and Rt between 0.95 and 1 (inclusive)") +
     ggplot2::annotation_logticks(sides = "b") +
     ggplot2::scale_fill_manual(
       values = covid_pal,
@@ -339,9 +477,9 @@ scatterTableFunction <- function(x){
                             importation_per_incidence_high),
                   expected_imported_CI = 
                     sprintf("%0.1f (%0.1f, %0.1f)", 
-                            expected_imported_cases_scenario_1_mid,
-                            expected_imported_cases_scenario_1_low,
-                            expected_imported_cases_scenario_1_high),
+                            expected_imported_cases_scenario_4_mid,
+                            expected_imported_cases_scenario_4_low,
+                            expected_imported_cases_scenario_4_high),
                   new_cases_CI = 
                     sprintf("%0.0f (%0.0f, %0.0f)", 
                             new_cases_adjusted_mean_mid,
@@ -352,7 +490,8 @@ scatterTableFunction <- function(x){
                   iso3c                      = iso_code,
                   `Expected imported cases`  = expected_imported_CI,
                   `Local cases`              = new_cases_CI,
-                  `Imported cases per local` = importation_per_incidence_CI) %>%
+                  `Imported cases per local` = importation_per_incidence_CI,
+                  `Rt estimate`              = rt_estimate) %>%
     dplyr::group_by(Region) %>%
     dplyr::mutate(Region = unfill_vec(Region),
                   Region = ifelse(is.na(Region), "", Region))

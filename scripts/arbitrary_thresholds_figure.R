@@ -213,7 +213,7 @@ p_together <- p1 + p2 + p3 + p4 + p5 + plot_layout(guides = "collect", design = 
 
 p_together
 
-ggplot2::ggsave("outputs/figure_S4.pdf",
+ggplot2::ggsave("outputs/figure_S6.pdf",
                 p_together, 
                 width = 30,
                 height = 15,

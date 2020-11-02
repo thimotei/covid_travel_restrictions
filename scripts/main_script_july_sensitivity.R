@@ -6,69 +6,119 @@ source(here("R","flight_data_cleaning_utils.R"))
 source(here("R","data_helper_functions.R"))
 source(here("R","plotting_helper_functions.R"))
 
-#--- reading in the cleaned data files
+#--- reading in the flight-path specific scaling factors between May 2019 and May 2020
 total_flights_may_2019_2020 <- 
-    readr::read_csv(here("data", "flight_reduction_scaling_factors.csv"))
+    readr::read_csv(here("data", "flight_reduction_scaling_factors_may.csv")) %>%
+    dplyr::select(-X1)
 
-#--- flight data imported below is not in repo, as its not public
-oag_traveller_data_may_2020 <- 
-    readr::read_csv(here("data", "raw_data/oag_data_may_2019_2020"))
+#--- reading in the flight-path specific scaling factors between September 2019 and September 2020
+total_flights_september_2019_2020 <- 
+    readr::read_csv(here("data", "flight_reduction_scaling_factors_september.csv")) %>%
+    dplyr::select(-X1)
 
-#--- computing reduction in flights scaling factor for all pairs of countries
-may_travel_data <- oag_traveller_data_may_2020 %>%
+#--- importing flight data. It is not in the public repo, as the data is not publicly available
+oag_traveller_data_may_2019 <- 
+    readr::read_csv(here("data", "raw_data/oag_data_may_2019")) 
+
+#--- importing flight data. It is not in the public repo, as the data is not publicly available
+oag_traveller_data_september_2019 <- 
+    readr::read_csv(here("data", "raw_data/oag_data_september_2019")) %>%
+    dplyr::select(-X1)
+
+#--- computing which countries had travel rating of 1, 2 or 3 in May and September
+oxford_travel_may <- oxford_restrictions_fun(month = 5)
+oxford_travel_sept <- oxford_restrictions_fun(month = 9)
+
+#--- 2019 April data for countries with level 3 or lower restriction rating
+#--- to scale down the level 4 countries
+countries_level_3_or_lower_may <- oxford_travel_may %>% 
+    dplyr::filter(travel_restrictions_rating != 4) %>%
+    dplyr::pull(iso_code)
+
+countries_level_3_or_lower_sept <- oxford_travel_sept %>% 
+    dplyr::filter(travel_restrictions_rating != 4) %>%
+    dplyr::pull(iso_code)
+
+
+#--- computing reduction in flights scaling factor for all pairs of countries for May 2019/20
+may_travel_data <- oag_traveller_data_may_2019 %>%
     dplyr::full_join(total_flights_may_2019_2020,
                      by = c("origin_country_iso_code", "destination_country_iso_code")) %>%
     dplyr::mutate(scaling_factor = 
-                      if_else(is.na(scaling_factor), 0.3090604, scaling_factor)) %>%
+                      if_else(is.na(scaling_factor), 0.372, scaling_factor)) %>%
     dplyr::mutate(origin_country      =  
                       countrycode::countrycode(origin_country_iso_code, "iso3c", "country.name"),
                   destination_country = 
                       countrycode::countrycode(destination_country_iso_code, "iso3c", "country.name")) %>%
-    dplyr::mutate(scaled_travellers = total_passengers*scaling_factor) %>%
+    dplyr::mutate(scaled_travellers = 
+                      dplyr::case_when(origin_country_iso_code %in% countries_level_3_or_lower_may  ~ total_passengers*scaling_factor,
+                                       !origin_country_iso_code %in% countries_level_3_or_lower_may ~ total_passengers)) %>%
     dplyr::select(origin_country, destination_country,
                   origin_country_iso_code, destination_country_iso_code,
                   total_passengers, scaling_factor, scaled_travellers)
-#--- 0.3090604 is the mean of the existing scaling factors. We use this in the absence of data for countries without
+#--- 0.372 is the mean of the existing scaling factors. We use this in the absence of data for countries without
+#--- estimates in the OpenSky dataset
+
+#--- computing reduction in flights scaling factor for all pairs of countries for May 2019/20
+september_travel_data <- oag_traveller_data_september_2019 %>%
+    dplyr::full_join(total_flights_september_2019_2020,
+                     by = c("origin_country_iso_code", "destination_country_iso_code")) %>%
+    dplyr::mutate(scaling_factor = 
+                      if_else(is.na(scaling_factor), 0.521, scaling_factor)) %>%
+    dplyr::mutate(origin_country      =  
+                      countrycode::countrycode(origin_country_iso_code, "iso3c", "country.name"),
+                  destination_country = 
+                      countrycode::countrycode(destination_country_iso_code, "iso3c", "country.name")) %>%
+    dplyr::mutate(scaled_travellers = 
+                      dplyr::case_when( origin_country_iso_code %in% countries_level_3_or_lower_sept  ~ total_passengers*scaling_factor,
+                                        !origin_country_iso_code %in% countries_level_3_or_lower_sept  ~ total_passengers)) %>%
+    dplyr::select(origin_country, destination_country,
+                  origin_country_iso_code, destination_country_iso_code,
+                  total_passengers, scaling_factor, scaled_travellers)
+#--- 0.521. is the mean of the existing scaling factors. We use this in the absence of data for countries without
 #--- estimates in the OpenSky dataset
 
 
 #--- using the scaled traveller numbers and prevalence to calculate expected number of imported cases
 #--- from all origin countries, to all destination countries
-
 ecdc_data <- ecdc_data_function()
 under_reporting_data <- under_reporting_data_function(ecdc_data)
 
-july_dates <- seq(as.Date("2020-07-01"), as.Date("2020-07-31"), by="days")
+may_dates       <- seq(as.Date("2020-05-01"), as.Date("2020-05-31"), by="days")
+july_dates      <- seq(as.Date("2020-07-01"), as.Date("2020-07-31"), by="days")
+september_dates <- seq(as.Date("2020-09-01"), as.Date("2020-09-30"), by="days")
 
-#--- July prevalences (for sensitivity)
-prevalence_july_all <- july_dates %>%
+#-------------------- CALCULATING PREVALENCE --------------------#
+#--- calculating mean prevalence in May and September
+prevalence_july <- september_dates %>%
     purrr::map(
-        ~global_prevalence_estimates_function(ecdc_data, under_reporting_data, .x))
+        ~global_prevalence_estimates_function(ecdc_data, under_reporting_data, .x)) 
 
-prevalence_july <- prevalence_july_all %>%
+prevalence_july <- prevalence_september_all %>%
     dplyr::bind_rows(.id = "country") %>%
     dplyr::group_by(iso_code) %>%
     dplyr::summarise(prevalence_mid = mean(prevalence_mid/9),
                      prevalence_low = mean(prevalence_low/9),
                      prevalence_high = mean(prevalence_high/9)) %>%
-    dplyr::mutate(country = countrycode::countrycode(iso_code, "iso3c", 'country.name',
+    dplyr::mutate(country = countrycode::countrycode(iso_code, "iso3c", 'country.name', 
                                                      custom_match = c('RKS' = 'Kosovo',
                                                                       'XKX' = 'Kosovo'))) %>%
     dplyr::select(origin_country_iso_code = iso_code, country, prevalence_mid, prevalence_low, prevalence_high)
 
 
-#--- using the old variable names
-prevalence_data_country_A <- prevalence_july
-
+#--- assumptions about asymptomatic infections
 asymptomatic_prop_mid     <- 0.5
 asymptomatic_prop_low     <- 0.1
 asymptomatic_prop_high    <- 0.7
-traveller_reduction_1     <- 0.5
+
+#--- for sensitivity analysis where we assume levels of death under-ascertainment 
 under_ascertainment_estimate_1 <- 0.5
 under_ascertainment_estimate_2 <- 0.2
 
-imported_cases_pre_sum <- may_travel_data %>%
-    dplyr::left_join(prevalence_data_country_A) %>%
+
+#-------------------- CALCULATING EXPECTED IMPORTS --------------------#
+imported_cases_may_pre_sum <- may_travel_data %>%
+    dplyr::left_join(prevalence_july) %>%
     dplyr::select(origin_country, destination_country, origin_country_iso_code, 
                   destination_country_iso_code, total_passengers, scaled_travellers, 
                   prevalence_mid, prevalence_low, prevalence_high) %>%
@@ -80,13 +130,25 @@ imported_cases_pre_sum <- may_travel_data %>%
         expected_imported_cases_scenario_1_high  = total_passengers*prevalence_high,
         expected_imported_cases_scenario_2_mid   = scaled_travellers*prevalence_mid,
         expected_imported_cases_scenario_2_low   = scaled_travellers*prevalence_low,
-        expected_imported_cases_scenario_2_high  = scaled_travellers*prevalence_high,
-        expected_imported_cases_scenario_3_mid   = scaled_travellers*prevalence_mid*traveller_reduction_1,
-        expected_imported_cases_scenario_3_low   = scaled_travellers*prevalence_low*traveller_reduction_1,
-        expected_imported_cases_scenario_3_high  = scaled_travellers*prevalence_high*traveller_reduction_1)
+        expected_imported_cases_scenario_2_high  = scaled_travellers*prevalence_high)
+
+imported_cases_september_pre_sum <- september_travel_data %>%
+    dplyr::left_join(prevalence_july) %>%
+    dplyr::select(origin_country, destination_country, origin_country_iso_code, 
+                  destination_country_iso_code, total_passengers, scaled_travellers, 
+                  prevalence_mid, prevalence_low, prevalence_high) %>%
+    dplyr::group_by(destination_country_iso_code,
+                    destination_country) %>%
+    dplyr::mutate(
+        expected_imported_cases_scenario_3_mid   = total_passengers*prevalence_mid,
+        expected_imported_cases_scenario_3_low   = total_passengers*prevalence_low,
+        expected_imported_cases_scenario_3_high  = total_passengers*prevalence_high,
+        expected_imported_cases_scenario_4_mid   = scaled_travellers*prevalence_mid,
+        expected_imported_cases_scenario_4_low   = scaled_travellers*prevalence_low,
+        expected_imported_cases_scenario_4_high  = scaled_travellers*prevalence_high)
 
 #--- removing unnecessary columns for smooth joining
-imported_cases_pre_sum_reduced <- imported_cases_pre_sum %>% 
+imported_cases_may_pre_sum_reduced <- imported_cases_may_pre_sum %>% 
     dplyr::select(origin_country_iso_code,
                   destination_country_iso_code,
                   expected_imported_cases_scenario_1_mid,
@@ -94,56 +156,39 @@ imported_cases_pre_sum_reduced <- imported_cases_pre_sum %>%
                   expected_imported_cases_scenario_1_high,
                   expected_imported_cases_scenario_2_mid,
                   expected_imported_cases_scenario_2_low,
-                  expected_imported_cases_scenario_2_high,
-                  expected_imported_cases_scenario_3_mid,
-                  expected_imported_cases_scenario_3_low,
-                  expected_imported_cases_scenario_3_high)
+                  expected_imported_cases_scenario_2_high)
 
-#--- adding in new version of scenario 4, using the 2020 dataset
-
-oag_april_2020_scaled <- oag_2020_april_data_function()
-
-oag_april_2020_scaled_neat <- oag_april_2020_scaled %>% 
-    dplyr::select(origin_country,
-                  destination_country, 
-                  origin_country_iso_code = iso_code_dep,
-                  destination_country_iso_code = iso_code_arr,
-                  total_passengers = total_travellers, scaled_travellers)
-
-imported_cases_pre_sum_2020 <- oag_april_2020_scaled_neat %>%
-    dplyr::left_join(prevalence_data_country_A) %>%
-    dplyr::select(origin_country, destination_country, origin_country_iso_code, 
-                  destination_country_iso_code, total_passengers, scaled_travellers, 
-                  prevalence_mid, prevalence_low, prevalence_high) %>%
-    dplyr::group_by(destination_country_iso_code,
-                    destination_country) %>%
-    dplyr::mutate(
-        expected_imported_cases_scenario_4_mid   = total_passengers*prevalence_mid,
-        expected_imported_cases_scenario_4_low   = total_passengers*prevalence_low,
-        expected_imported_cases_scenario_4_high  = total_passengers*prevalence_high,
-        scaled_travellers = NA)
-
-#--- removing unnecessary columns for smooth joining
-imported_cases_pre_sum_2020_reduced <- imported_cases_pre_sum_2020 %>% 
+imported_cases_september_pre_sum_reduced <- imported_cases_september_pre_sum %>% 
     dplyr::select(origin_country_iso_code,
                   destination_country_iso_code,
+                  expected_imported_cases_scenario_3_mid,
+                  expected_imported_cases_scenario_3_low,
+                  expected_imported_cases_scenario_3_high,
                   expected_imported_cases_scenario_4_mid,
                   expected_imported_cases_scenario_4_low,
                   expected_imported_cases_scenario_4_high)
 
-
-#--- joining first 3 scenarios with 4th scenario (where we use 2020 data directly)
-imported_cases_pre_sum_together <- imported_cases_pre_sum_reduced %>%
-    dplyr::left_join(imported_cases_pre_sum_2020_reduced)
-
-imported_cases <- imported_cases_pre_sum_together %>%
+#--- summing over all origin countries into each destination country and averaging over all days in the month
+imported_cases_may <- imported_cases_may_pre_sum_reduced %>%
     dplyr::summarise_at(.vars = vars(starts_with("expected_imported_cases_scenario_")),
                         .funs = function(x){sum(x, na.rm = T)/31}) %>%
     dplyr::arrange(destination_country)
 
-# calculating the incidence in each destination country
+imported_cases_september <- imported_cases_september_pre_sum_reduced %>%
+    dplyr::summarise_at(.vars = vars(starts_with("expected_imported_cases_scenario_")),
+                        .funs = function(x){sum(x, na.rm = T)/31}) %>%
+    dplyr::arrange(destination_country)
+
+# #--- joining imported cases in May and September together
+imported_cases <- imported_cases_may %>%
+    dplyr::left_join(imported_cases_september)
+
+#-------------------- CALCULATING INCIDENCE --------------------#
+#--- calculate all case data, adjusted for under-ascertainment
 adjusted_case_data       <- get_adjusted_case_data_national()
-incidence_data_country_B <-  adjusted_case_data %>%
+
+# calculating the incidence in each destination country in May
+incidence_july <-  adjusted_case_data %>%
     dplyr::group_by(iso_code) %>%
     dplyr::filter(date %in% july_dates) %>%
     dplyr::mutate(
@@ -160,25 +205,11 @@ incidence_data_country_B <-  adjusted_case_data %>%
                   new_cases_adjusted_mean_low, 
                   new_cases_adjusted_mean_high)
 
-#--- reordering the scenarios (swapping A and D) for both numerical and label tibbles
-#--- there is probably a cleverer way of doing this but this works
-imported_cases_reordered <- imported_cases %>%
-    dplyr::rename(old_1_mid  = expected_imported_cases_scenario_1_mid,
-                  old_1_low  = expected_imported_cases_scenario_1_low,
-                  old_1_high = expected_imported_cases_scenario_1_high,
-                  old_4_mid  = expected_imported_cases_scenario_4_mid,
-                  old_4_low  = expected_imported_cases_scenario_4_low,
-                  old_4_high = expected_imported_cases_scenario_4_high) %>%
-    dplyr::rename(expected_imported_cases_scenario_1_mid  = old_4_mid,
-                  expected_imported_cases_scenario_1_low  = old_4_low,
-                  expected_imported_cases_scenario_1_high = old_4_high,
-                  expected_imported_cases_scenario_4_mid  = old_1_mid,
-                  expected_imported_cases_scenario_4_low  = old_1_low,
-                  expected_imported_cases_scenario_4_high = old_1_high) %>% 
-    dplyr::select(imported_cases %>% colnames())
 
-imported_cases_and_incidence_together <- imported_cases_reordered %>%
-    dplyr::left_join(incidence_data_country_B) %>%
+#-------------------- PUTTING IMPORTS AND INCIDENCE TOGETHER --------------------#
+#--- calculating risk ratings in May
+imported_cases_and_incidence_together_may <- imported_cases_may %>%
+    dplyr::left_join(incidence_july) %>%
     dplyr::rename_at(.vars = vars(starts_with("expected")), 
                      .funs = function(x){sub(pattern = "expected_", replacement = "", x)}) %>%
     dplyr::mutate_at(.vars = vars(matches("imported.*\\_mid")),
@@ -191,16 +222,60 @@ imported_cases_and_incidence_together <- imported_cases_reordered %>%
     dplyr::mutate_at(.vars = vars(starts_with("imported")),
                      .funs = list(~pmin(pmax(.,0),1)))
 
-imported_cases_and_incidence_together_labels <- 
-    imported_cases_and_incidence_together %>%
+#--- calculating risk ratings in September
+imported_cases_and_incidence_together_september <- imported_cases_september %>%
+    dplyr::left_join(incidence_july) %>%
+    dplyr::rename_at(.vars = vars(starts_with("expected")), 
+                     .funs = function(x){sub(pattern = "expected_", replacement = "", x)}) %>%
+    dplyr::mutate_at(.vars = vars(matches("imported.*\\_mid")),
+                     .funs = list(~dplyr::na_if(./new_cases_adjusted_mean_mid, "Inf"))) %>%
+    dplyr::mutate_at(.vars = vars(matches("imported.*\\_low")),
+                     .funs = list(~dplyr::na_if(./new_cases_adjusted_mean_high, "Inf"))) %>%
+    dplyr::mutate_at(.vars = vars(matches("imported.*\\_high")),
+                     .funs = list(~dplyr::na_if(./new_cases_adjusted_mean_low, "Inf"))) %>%
+    tidyr::drop_na()  %>%
+    dplyr::mutate_at(.vars = vars(starts_with("imported")),
+                     .funs = list(~pmin(pmax(.,0),1)))
+
+#--- labelling risk ratings in May
+imported_cases_and_incidence_together_labels_may <- 
+    imported_cases_and_incidence_together_may %>%
     dplyr::mutate_at(.vars = vars(starts_with("imported")),
                      .funs = function(x){cut(x, breaks = c(0, 0.01, 0.1, 1),
                                              include.lowest = T, 
                                              labels = c("Green",
                                                         "Amber",
                                                         "Red"))}) %>%
-    dplyr::rename(iso_code = destination_country_iso_code) 
+    dplyr::rename(iso_code = destination_country_iso_code,
+                  incidence_may_mid  = new_cases_adjusted_mean_mid,
+                  incidence_may_low  = new_cases_adjusted_mean_low,
+                  incidence_may_high = new_cases_adjusted_mean_high)
 
+#--- labelling risk ratings in September
+imported_cases_and_incidence_together_labels_september <- 
+    imported_cases_and_incidence_together_september %>%
+    dplyr::mutate_at(.vars = vars(starts_with("imported")),
+                     .funs = function(x){cut(x, breaks = c(0, 0.01, 0.1, 1),
+                                             include.lowest = T, 
+                                             labels = c("Green",
+                                                        "Amber",
+                                                        "Red"))}) %>%
+    dplyr::rename(iso_code = destination_country_iso_code,
+                  incidence_sept_mid  = new_cases_adjusted_mean_mid,
+                  incidence_sept_low  = new_cases_adjusted_mean_low,
+                  incidence_sept_high = new_cases_adjusted_mean_high)
+
+#--- Putting everything together ready for plots
+imported_cases_and_incidence_together_labels <- imported_cases_and_incidence_together_labels_may %>%
+    dplyr::left_join(imported_cases_and_incidence_together_labels_september) %>%
+    dplyr::select(iso_code, destination_country, imported_cases_scenario_1_mid, imported_cases_scenario_1_low,
+                  imported_cases_scenario_1_high, imported_cases_scenario_2_mid, imported_cases_scenario_2_low,
+                  imported_cases_scenario_2_high, imported_cases_scenario_3_mid, imported_cases_scenario_3_low,
+                  imported_cases_scenario_3_high, imported_cases_scenario_4_mid, imported_cases_scenario_4_low,
+                  imported_cases_scenario_4_high, incidence_may_mid, incidence_may_low, incidence_may_high,
+                  incidence_sept_mid, incidence_sept_low, incidence_sept_high)
+
+#-------------------- PLOTTING RESULTS --------------------#
 #--- making figure 1 - map of risk of imported cases
 list(`SI_low`  = list(name = "SI_low",
                       scenarios = "low"),
@@ -211,12 +286,11 @@ list(`SI_low`  = list(name = "SI_low",
     purrr::map(
         ~ggplot2::ggsave(filename = 
                              here("outputs",
-                                  paste("figure_1_sensitivity_july",.x$name,".pdf",sep="")),
+                                  paste("figure_S5_",.x$name,".pdf",sep="")),
                          plot = mapPlottingFunction(
                              imported_cases_and_incidence_together_labels,
                              scenarios = .x$scenarios),
                          device = "pdf",
                          width = 16, 
                          height = 8, units = "in", dpi = 300))
-
 
