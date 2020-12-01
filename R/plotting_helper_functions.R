@@ -381,7 +381,7 @@ scatterPlottingFunction <- function(x, interval = FALSE){
     ggplot2::xlab("Expected number of imported cases") +
     ggplot2::ylab("Expected number of imported cases\nas percentage of local incidence") +
     ggplot2::ggtitle(label    = "September 2020 traveller estimates, scaled by OpenSky flight data",
-                     subtitle = "Countries with imported cases at least 1% of estimated local incidence and Rt between 0.95 and 1 (inclusive)") +
+                     subtitle = "Countries with imported cases at least 1% of estimated local incidence and Rt estimates between 0.95 and 1.05 inclusive") +
     ggplot2::annotation_logticks(sides = "b") +
     ggplot2::scale_fill_manual(
       values = covid_pal,
