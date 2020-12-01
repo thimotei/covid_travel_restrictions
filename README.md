@@ -21,7 +21,7 @@ git clone https://github.com/thimotei/covid_travel_restrictions
 
 To reproduce all of the figures in the manuscript and the quoted results in the main text, run the script 
 ```r
-scripts/main_script.R
+scripts/main_script_plotting_all_results.R
 ```
 
 Most of the other scripts are to produce figures or results for the sensitivity analyses in the Supplementary Material.
