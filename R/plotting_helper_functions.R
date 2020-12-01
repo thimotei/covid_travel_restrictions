@@ -268,7 +268,16 @@ mapPlottingFunctionUserDefined <- function(x)
 
 }
 
-barPlottingFunction <- function(x, interval = FALSE){
+barPlottingFunction <- function(x, interval = FALSE, sensitivity = FALSE){
+  
+  if(sensitivity == TRUE)
+  {
+    y_axis_label <- "Required reduction in air travel to\nreduce risk rating to 1% for all\ncountries with Rt estimates \nbetween 0.95 and 1.05 (inclusive)"
+  }
+  else
+  {
+    y_axis_label <- "Required reduction in air travel to\nreduce risk rating to 1%"
+  }
   
   barPlot <- ggplot2::ggplot(data = x) + 
     ggplot2::geom_col(ggplot2::aes(x = country,
@@ -280,7 +289,7 @@ barPlottingFunction <- function(x, interval = FALSE){
                                                        vjust =0.5)) +
     ggplot2::scale_y_continuous(labels = scales::percent) + 
     ggplot2::labs(x = "Country",
-                  y = "Required reduction in air travel to\nreduce risk rating to 1% for all\ncountries with Rt estimates \nbetween 0.95 and 1.05 (inclusive)") +
+                  y = y_axis_label) +
     ggplot2::facet_grid(. ~ region_abb, scales = "free_x", 
                         space = "free_x") 
   
