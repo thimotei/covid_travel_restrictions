@@ -1,110 +1,11 @@
-#-------------------- LMIC sensitivity analysis, figure S4 --------------------#
-
-
-library(here)
-setwd(here::here())
-
-source(here("R","packages.R"))
-source(here("R","flight_data_cleaning_utils.R"))
-source(here("R","data_helper_functions.R"))
-source(here("R","plotting_helper_functions.R"))
-
-#--- reading in the flight-path specific scaling factors between September 2019 and September 2020
-total_flights_september_2019_2020 <- 
-    readr::read_csv(here("data", "flight_reduction_scaling_factors_september.csv")) %>%
-    dplyr::select(-X1)
-
-#--- importing flight data. It is not in the public repo, as the data is not publicly available
-oag_traveller_data_september_2019 <- 
-    readr::read_csv(here("data", "raw_data/oag_data_september_2019")) %>%
-    dplyr::select(-X1)
-
-#--- computing which countries had travel rating of 1, 2 or 3 in May and September
-oxford_travel_sept <- oxford_restrictions_fun(month = 9)
-
-#--- 2019 April data for countries with level 3 or lower restriction rating
-#--- to scale down the level 4 countries
-countries_level_3_or_lower_sept <- oxford_travel_sept %>% 
-    dplyr::filter(travel_restrictions_rating != 4) %>%
-    dplyr::pull(iso_code)
-
-#--- computing reduction in flights scaling factor for all pairs of countries for Sept 2019/20
-september_travel_data <- oag_traveller_data_september_2019 %>%
-    dplyr::full_join(total_flights_september_2019_2020,
-                     by = c("origin_country_iso_code", "destination_country_iso_code")) %>%
-    dplyr::mutate(scaling_factor = 
-                      if_else(is.na(scaling_factor), 0.521, scaling_factor)) %>%
-    dplyr::mutate(origin_country      =  
-                      countrycode::countrycode(origin_country_iso_code, "iso3c", "country.name"),
-                  destination_country = 
-                      countrycode::countrycode(destination_country_iso_code, "iso3c", "country.name")) %>%
-    dplyr::mutate(scaled_travellers = 
-                      dplyr::case_when( origin_country_iso_code %in% countries_level_3_or_lower_sept  ~ total_passengers*scaling_factor,
-                                       !origin_country_iso_code %in% countries_level_3_or_lower_sept  ~ total_passengers)) %>%
-    dplyr::select(origin_country, destination_country,
-                  origin_country_iso_code, destination_country_iso_code,
-                  total_passengers, scaling_factor, scaled_travellers)
-#--- 0.521. is the mean of the existing scaling factors. We use this in the absence of data for countries without
-#--- estimates in the OpenSky dataset
-
-
-#--- using the scaled traveller numbers and prevalence to calculate expected number of imported cases
-#--- from all origin countries, to all destination countries
-ecdc_data <- ecdc_data_function()
-under_reporting_data <- under_reporting_data_function(ecdc_data)
-
-september_dates <- seq(as.Date("2020-09-01"), as.Date("2020-09-30"), by="days")
-
-#-------------------- CALCULATING PREVALENCE --------------------#
-#--- calculating mean prevalence in May and September
-prevalence_september_all <- september_dates %>%
-    purrr::map(
-        ~global_prevalence_estimates_function(ecdc_data, under_reporting_data, .x)) 
-
-prevalence_september <- prevalence_september_all %>%
-    dplyr::bind_rows(.id = "country") %>%
-    dplyr::group_by(iso_code) %>%
-    dplyr::summarise(prevalence_mid = mean(prevalence_mid/9),
-                     prevalence_low = mean(prevalence_low/9),
-                     prevalence_high = mean(prevalence_high/9)) %>%
-    dplyr::mutate(country = countrycode::countrycode(iso_code, "iso3c", 'country.name', 
-                                                     custom_match = c('RKS' = 'Kosovo',
-                                                                      'XKX' = 'Kosovo'))) %>%
-    dplyr::select(origin_country_iso_code = iso_code, country, prevalence_mid, prevalence_low, prevalence_high)
-
-
-#-------------------- CALCULATING INCIDENCE --------------------#
-incidence_september <-  adjusted_case_data %>%
-    dplyr::group_by(iso_code) %>%
-    dplyr::filter(date %in% september_dates) %>%
-    dplyr::mutate(
-        incidence_estimate_mid = new_cases_adjusted_mid/(1 - asymptomatic_prop_mid),
-        incidence_estimate_low = new_cases_adjusted_low/(1 - asymptomatic_prop_low),
-        incidence_estimate_high = new_cases_adjusted_high/(1 - asymptomatic_prop_high)) %>%
-    dplyr::summarise(
-        new_cases_adjusted_mean_mid  = mean(incidence_estimate_mid),
-        new_cases_adjusted_mean_low  = mean(incidence_estimate_low),
-        new_cases_adjusted_mean_high = mean(incidence_estimate_high)) %>%
-    dplyr::mutate(destination_country_iso_code = iso_code) %>%
-    dplyr::select(destination_country_iso_code,
-                  new_cases_adjusted_mean_mid, 
-                  new_cases_adjusted_mean_low, 
-                  new_cases_adjusted_mean_high)
-
-#--- assumptions about asymptomatic infections
-asymptomatic_prop_mid     <- 0.5
-asymptomatic_prop_low     <- 0.1
-asymptomatic_prop_high    <- 0.7
-
-#--- for sensitivity analysis where we assume levels of death under-ascertainment 
-under_ascertainment_estimate_1 <- 0.5
-under_ascertainment_estimate_2 <- 0.2
+#--- if results have not been run yet, run the script below
+source("scripts/main_script_computing_all_results.R")
 
 #-------------------- LMIC SENSITIVITY ANALYSIS TO MAKE FIGURE S4 --------------------#
 
 #--- sensitivity analysis, scaling all LMIC prevalence data up by 50%, 80% and 90%
 
-list_of_lmic_iso_codes <- c("Afghanistan", "Albania", "Algeria", "Angola", "Antigua and Barbuda",
+list_of_lmic_countries <- c("Afghanistan", "Albania", "Algeria", "Angola", "Antigua and Barbuda",
                             "Argentina", "Armenia", "Azerbaijan", "Bangladesh", "Belarus", "Belize",
                             "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil",
                             "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia", "Cameroon", 
@@ -131,7 +32,7 @@ list_of_lmic_iso_codes <- c("Afghanistan", "Albania", "Algeria", "Angola", "Anti
                             "Wallis and Futuna", "West Bank and Gaza Strip", "Yemen", "Zambia", "Zimbabwe")
 
 
-lmics <- dplyr::tibble(country_name = list_of_lmic_iso_codes) %>%
+lmics <- dplyr::tibble(country_name = list_of_lmic_countries) %>%
     dplyr::mutate(iso_code = countrycode::countrycode(country_name, "country.name", "iso3c", custom_match = c("Kosovo" = "RKS",
                                                                                                               "Micronesia" = "FSM")))
 
@@ -262,7 +163,7 @@ list(`SI` = list(name = "SI",
                  scenarios = c("low", "mid", "high"))) %>%
     purrr::map(
         ~ggplot2::ggsave(filename = 
-                             here("outputs", "figure_S4.pdf"),
+                             here("outputs", "figure_S5.pdf"),
                          plot = mapPlottingFunction(
                              imported_cases_and_incidence_together_sensitivity_labels_all,
                              scenarios = .x$scenarios,
@@ -270,3 +171,18 @@ list(`SI` = list(name = "SI",
                          device = "pdf",
                          width = 16, 
                          height = 8, units = "in", dpi = 300))
+
+
+list(`SI` = list(name = "SI",
+                 scenarios = c("low", "mid", "high"))) %>%
+    purrr::map(
+        ~ggplot2::ggsave(filename = 
+                             here("outputs", "figure_S5.png"),
+                         plot = mapPlottingFunction(
+                             imported_cases_and_incidence_together_sensitivity_labels_all,
+                             scenarios = .x$scenarios,
+                             sensitivity = TRUE),
+                         device = "png",
+                         width = 16, 
+                         height = 8, units = "in", dpi = 300))
+

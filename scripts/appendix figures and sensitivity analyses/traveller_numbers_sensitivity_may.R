@@ -1,22 +1,6 @@
-library(here)
-setwd(here::here())
-
-source(here("R","packages.R"))
-source(here("R","flight_data_cleaning_utils.R"))
-source(here("R","data_helper_functions.R"))
-source(here("R","plotting_helper_functions.R"))
-
-#--- reading in the cleaned data files
-total_flights_may_2019_2020 <- 
-    readr::read_csv(here("data", "flight_reduction_scaling_factors_may.csv")) %>%
-    dplyr::select(-X1)
-
-#--- flight data imported below is not in repo, as its not public
-oag_traveller_data_may_2020 <- 
-    readr::read_csv(here("data", "raw_data/oag_data_may_2019"))
 
 #--- computing reduction in flights scaling factor for all pairs of countries
-may_travel_data <- oag_traveller_data_may_2020 %>%
+may_travel_data <- oag_traveller_data_may_2019 %>%
     dplyr::full_join(total_flights_may_2019_2020,
                      by = c("origin_country_iso_code", "destination_country_iso_code")) %>%
     dplyr::mutate(scaling_factor = 
@@ -79,17 +63,14 @@ prevalence_july <- prevalence_july_all %>%
 asymptomatic_prop_mid     <- 0.5
 asymptomatic_prop_low     <- 0.1
 asymptomatic_prop_high    <- 0.7
-traveller_reduction_1     <- 0.75
-traveller_reduction_2     <- 0.50
-under_ascertainment_estimate_1 <- 0.5
-under_ascertainment_estimate_2 <- 0.2
-under_ascertainment_estimate_3 <- 0.1
+traveller_reduction_1     <- 0.8
+traveller_reduction_2     <- 0.5
 
 #--- DEPRACTED 
 #traveller_reduction_2 <- 0.75
 
 imported_cases_pre_sum <- may_travel_data %>%
-    dplyr::left_join(prevalence_july) %>%
+    dplyr::left_join(prevalence_may) %>%
     dplyr::select(origin_country, destination_country, origin_country_iso_code, 
                   destination_country_iso_code, total_passengers, scaled_travellers, 
                   prevalence_mid, prevalence_low, prevalence_high) %>%

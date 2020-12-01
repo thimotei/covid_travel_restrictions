@@ -1,92 +1,7 @@
-library(here)
-setwd(here::here())
+#--- if the main results have not been run yet, run the script below
+source("scripts/main_script_computing_all_results.R")
 
-source(here("R","packages.R"))
-source(here("R","flight_data_cleaning_utils.R"))
-source(here("R","data_helper_functions.R"))
-source(here("R","plotting_helper_functions.R"))
-
-#--- reading in the flight-path specific scaling factors between May 2019 and May 2020
-total_flights_may_2019_2020 <- 
-    readr::read_csv(here("data", "flight_reduction_scaling_factors_may.csv")) %>%
-    dplyr::select(-X1)
-
-#--- reading in the flight-path specific scaling factors between September 2019 and September 2020
-total_flights_september_2019_2020 <- 
-    readr::read_csv(here("data", "flight_reduction_scaling_factors_september.csv")) %>%
-    dplyr::select(-X1)
-
-#--- importing flight data. It is not in the public repo, as the data is not publicly available
-oag_traveller_data_may_2019 <- 
-    readr::read_csv(here("data", "raw_data/oag_data_may_2019")) 
-
-#--- importing flight data. It is not in the public repo, as the data is not publicly available
-oag_traveller_data_september_2019 <- 
-    readr::read_csv(here("data", "raw_data/oag_data_september_2019")) %>%
-    dplyr::select(-X1)
-
-#--- computing which countries had travel rating of 1, 2 or 3 in May and September
-oxford_travel_may <- oxford_restrictions_fun(month = 5)
-oxford_travel_sept <- oxford_restrictions_fun(month = 9)
-
-#--- 2019 April data for countries with level 3 or lower restriction rating
-#--- to scale down the level 4 countries
-countries_level_3_or_lower_may <- oxford_travel_may %>% 
-    dplyr::filter(travel_restrictions_rating != 4) %>%
-    dplyr::pull(iso_code)
-
-countries_level_3_or_lower_sept <- oxford_travel_sept %>% 
-    dplyr::filter(travel_restrictions_rating != 4) %>%
-    dplyr::pull(iso_code)
-
-
-#--- computing reduction in flights scaling factor for all pairs of countries for May 2019/20
-may_travel_data <- oag_traveller_data_may_2019 %>%
-    dplyr::full_join(total_flights_may_2019_2020,
-                     by = c("origin_country_iso_code", "destination_country_iso_code")) %>%
-    dplyr::mutate(scaling_factor = 
-                      if_else(is.na(scaling_factor), 0.372, scaling_factor)) %>%
-    dplyr::mutate(origin_country      =  
-                      countrycode::countrycode(origin_country_iso_code, "iso3c", "country.name"),
-                  destination_country = 
-                      countrycode::countrycode(destination_country_iso_code, "iso3c", "country.name")) %>%
-    dplyr::mutate(scaled_travellers = 
-                      dplyr::case_when(origin_country_iso_code %in% countries_level_3_or_lower_may  ~ total_passengers*scaling_factor,
-                                       !origin_country_iso_code %in% countries_level_3_or_lower_may ~ total_passengers)) %>%
-    dplyr::select(origin_country, destination_country,
-                  origin_country_iso_code, destination_country_iso_code,
-                  total_passengers, scaling_factor, scaled_travellers)
-#--- 0.372 is the mean of the existing scaling factors. We use this in the absence of data for countries without
-#--- estimates in the OpenSky dataset
-
-#--- computing reduction in flights scaling factor for all pairs of countries for May 2019/20
-september_travel_data <- oag_traveller_data_september_2019 %>%
-    dplyr::full_join(total_flights_september_2019_2020,
-                     by = c("origin_country_iso_code", "destination_country_iso_code")) %>%
-    dplyr::mutate(scaling_factor = 
-                      if_else(is.na(scaling_factor), 0.521, scaling_factor)) %>%
-    dplyr::mutate(origin_country      =  
-                      countrycode::countrycode(origin_country_iso_code, "iso3c", "country.name"),
-                  destination_country = 
-                      countrycode::countrycode(destination_country_iso_code, "iso3c", "country.name")) %>%
-    dplyr::mutate(scaled_travellers = 
-                      dplyr::case_when( origin_country_iso_code %in% countries_level_3_or_lower_sept  ~ total_passengers*scaling_factor,
-                                        !origin_country_iso_code %in% countries_level_3_or_lower_sept  ~ total_passengers)) %>%
-    dplyr::select(origin_country, destination_country,
-                  origin_country_iso_code, destination_country_iso_code,
-                  total_passengers, scaling_factor, scaled_travellers)
-#--- 0.521. is the mean of the existing scaling factors. We use this in the absence of data for countries without
-#--- estimates in the OpenSky dataset
-
-
-#--- using the scaled traveller numbers and prevalence to calculate expected number of imported cases
-#--- from all origin countries, to all destination countries
-ecdc_data <- ecdc_data_function()
-under_reporting_data <- under_reporting_data_function(ecdc_data)
-
-may_dates       <- seq(as.Date("2020-05-01"), as.Date("2020-05-31"), by="days")
-july_dates      <- seq(as.Date("2020-07-01"), as.Date("2020-07-31"), by="days")
-september_dates <- seq(as.Date("2020-09-01"), as.Date("2020-09-30"), by="days")
+july_dates <- seq(as.Date("2020-07-01"), as.Date("2020-07-31"), by="days")
 
 #-------------------- CALCULATING PREVALENCE --------------------#
 #--- calculating mean prevalence in May and September
@@ -104,16 +19,6 @@ prevalence_july <- prevalence_september_all %>%
                                                      custom_match = c('RKS' = 'Kosovo',
                                                                       'XKX' = 'Kosovo'))) %>%
     dplyr::select(origin_country_iso_code = iso_code, country, prevalence_mid, prevalence_low, prevalence_high)
-
-
-#--- assumptions about asymptomatic infections
-asymptomatic_prop_mid     <- 0.5
-asymptomatic_prop_low     <- 0.1
-asymptomatic_prop_high    <- 0.7
-
-#--- for sensitivity analysis where we assume levels of death under-ascertainment 
-under_ascertainment_estimate_1 <- 0.5
-under_ascertainment_estimate_2 <- 0.2
 
 
 #-------------------- CALCULATING EXPECTED IMPORTS --------------------#
@@ -286,11 +191,28 @@ list(`SI_low`  = list(name = "SI_low",
     purrr::map(
         ~ggplot2::ggsave(filename = 
                              here("outputs",
-                                  paste("figure_S5_",.x$name,".pdf",sep="")),
+                                  paste("figure_S6_",.x$name,".pdf",sep="")),
                          plot = mapPlottingFunction(
                              imported_cases_and_incidence_together_labels,
                              scenarios = .x$scenarios),
                          device = "pdf",
+                         width = 16, 
+                         height = 8, units = "in", dpi = 300))
+
+list(`SI_low`  = list(name = "SI_low",
+                      scenarios = "low"),
+     `SI_high` = list(name = "SI_high",
+                      scenarios = "high"),
+     `main`    = list(name = "main",
+                      scenarios = "mid")) %>%
+    purrr::map(
+        ~ggplot2::ggsave(filename = 
+                             here("outputs",
+                                  paste("figure_S6_",.x$name,".png",sep="")),
+                         plot = mapPlottingFunction(
+                             imported_cases_and_incidence_together_labels,
+                             scenarios = .x$scenarios),
+                         device = "png",
                          width = 16, 
                          height = 8, units = "in", dpi = 300))
 

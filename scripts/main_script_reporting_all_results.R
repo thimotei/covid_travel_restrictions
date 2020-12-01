@@ -65,7 +65,9 @@ incidence_september %>%
 china_incidence <- 45.5 (24.3 - 245)
 new_zealand_incidence <- 9.58 (3.92 - 28.8)
 
-#--- Scenario A, condition less than 0.01
+
+#--- Results for condition less than 0.01 (lower than 1%)
+#--- Scenario A
 scenario_a_less_1_mid <- imported_cases_and_incidence_together_may %>%
     dplyr::rename(iso_code = destination_country_iso_code) %>%
     dplyr::left_join(rt_estimates_raw) %>%
@@ -165,7 +167,16 @@ less_than_1_scenario_b
 less_than_1_scenario_c
 less_than_1_scenario_d
 
-#--- Scenario A, condition between 0.01 and 0.1
+less_than_1_results <- dplyr::tibble(scenario = c("A", "B", "C", "D"),
+              nunber_of_countries = c(
+                  less_than_1_scenario_a, 
+                  less_than_1_scenario_b,
+                  less_than_1_scenario_c, 
+                  less_than_1_scenario_d))
+
+
+#--- Results for condition between 0.01 and 0.1 (between 1% and 10%)
+#--- Scenario A
 scenario_a_between_1_10_mid <- imported_cases_and_incidence_together_may %>%
     dplyr::rename(iso_code = destination_country_iso_code) %>%
     dplyr::left_join(rt_estimates_raw) %>%
@@ -208,9 +219,9 @@ scenario_b_between_1_10_high <- imported_cases_and_incidence_together_may %>%
     dplyr::filter(0.01 <= imported_cases_scenario_2_high & imported_cases_scenario_2_high <= 0.1) %>%
     nrow()
 
-between_1_10_scenario_b <- paste0(scenario_b_between_1_10_mid, " (",
-                                  scenario_b_between_1_10_high, " - ",
-                                  scenario_b_between_1_10_low, ")")
+between_1_10_scenario_b <- paste0(median(c(scenario_b_between_1_10_mid, scenario_b_between_1_10_low, scenario_b_between_1_10_high)), " (",
+                                  min(c(scenario_b_between_1_10_mid, scenario_b_between_1_10_low, scenario_b_between_1_10_high)), " - ",
+                                  max(c(scenario_b_between_1_10_mid, scenario_b_between_1_10_low, scenario_b_between_1_10_high)), ")")
 
 #--- Scenario C
 scenario_c_between_1_10_mid <- imported_cases_and_incidence_together_september %>%
@@ -231,9 +242,9 @@ scenario_c_between_1_10_high <- imported_cases_and_incidence_together_september 
     dplyr::filter(0.01 <= imported_cases_scenario_3_high & imported_cases_scenario_3_high <= 0.1) %>%
     nrow()
 
-between_1_10_scenario_c <- paste0(scenario_c_between_1_10_mid, " (",
-                                  scenario_c_between_1_10_low, " - ",
-                                  scenario_c_between_1_10_high, ")")
+between_1_10_scenario_c <- paste0(median(c(scenario_c_between_1_10_mid, scenario_c_between_1_10_low, scenario_c_between_1_10_high)), " (",
+                                  min(c(scenario_c_between_1_10_mid, scenario_c_between_1_10_low, scenario_c_between_1_10_high)), " - ",
+                                  max(c(scenario_c_between_1_10_mid, scenario_c_between_1_10_low, scenario_c_between_1_10_high)), ")")
 
 #--- Scenario D
 scenario_d_between_1_10_mid <- imported_cases_and_incidence_together_september %>%
@@ -254,9 +265,9 @@ scenario_d_between_1_10_high <- imported_cases_and_incidence_together_september 
     dplyr::filter(0.01 <= imported_cases_scenario_4_high & imported_cases_scenario_4_high <= 0.1) %>%
     nrow()
 
-between_1_10_scenario_d <- paste0(scenario_d_between_1_10_mid, " (",
-                                  scenario_d_between_1_10_low, " - ",
-                                  scenario_d_between_1_10_high, ")")
+between_1_10_scenario_d <- paste0(median(c(scenario_d_between_1_10_mid, scenario_d_between_1_10_low, scenario_d_between_1_10_high)), " (",
+                                  min(c(scenario_d_between_1_10_mid, scenario_d_between_1_10_low, scenario_d_between_1_10_high)), " - ",
+                                  max(c(scenario_d_between_1_10_mid, scenario_d_between_1_10_low, scenario_d_between_1_10_high)), ")")
 
 #--- all results
 between_1_10_scenario_a
@@ -264,104 +275,449 @@ between_1_10_scenario_b
 between_1_10_scenario_c
 between_1_10_scenario_d
 
-#--- Rt estimate conditions
+between_1_10_results <- dplyr::tibble(scenario = c("A", "B", "C", "D"),
+                                     nunber_of_countries = c(
+                                         between_1_10_scenario_a, 
+                                         between_1_10_scenario_b,
+                                         between_1_10_scenario_c, 
+                                         between_1_10_scenario_d))
+
+
+#--- Results for condition less than 0.1 (lower than 10%)
 #--- Scenario A
-rt_condition_countries_scenario_a_mid <- imported_cases_and_incidence_together_may %>%
+
+scenario_a_less_than_10_mid <- imported_cases_and_incidence_together_may %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter(imported_cases_scenario_1_mid < 0.1) %>%
+    nrow()
+
+scenario_a_less_than_10_low <- imported_cases_and_incidence_together_may %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter(imported_cases_scenario_1_low < 0.1) %>%
+    nrow()
+
+scenario_a_less_than_10_high <- imported_cases_and_incidence_together_may %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter(imported_cases_scenario_1_high < 0.1) %>%
+    nrow()
+
+less_than_10_scenario_a <- paste0(median(c(scenario_a_less_than_10_mid, scenario_a_less_than_10_low, scenario_a_less_than_10_high)), " (",
+                                  min(c(scenario_a_less_than_10_mid, scenario_a_less_than_10_low, scenario_a_less_than_10_high)), " - ",
+                                  max(c(scenario_a_less_than_10_mid, scenario_a_less_than_10_low, scenario_a_less_than_10_high)), ")")
+
+
+#--- Scenario B
+scenario_b_less_than_10_mid <- imported_cases_and_incidence_together_may %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter(imported_cases_scenario_2_mid < 0.1) %>%
+    nrow()
+
+scenario_b_less_than_10_low <- imported_cases_and_incidence_together_may %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter(imported_cases_scenario_2_low < 0.1) %>%
+    nrow()
+
+scenario_b_less_than_10_high <- imported_cases_and_incidence_together_may %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter(imported_cases_scenario_2_high < 0.1) %>%
+    nrow()
+
+less_than_10_scenario_b <- paste0(median(c(scenario_b_less_than_10_mid, scenario_b_less_than_10_low, scenario_b_less_than_10_high)), " (",
+                                  min(c(scenario_b_less_than_10_mid, scenario_b_less_than_10_low, scenario_b_less_than_10_high)), " - ",
+                                  max(c(scenario_b_less_than_10_mid, scenario_b_less_than_10_low, scenario_b_less_than_10_high)), ")")
+
+#--- Scenario C
+scenario_c_less_than_10_mid <- imported_cases_and_incidence_together_september %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter(imported_cases_scenario_3_mid < 0.1) %>%
+    nrow()
+
+scenario_c_less_than_10_low <- imported_cases_and_incidence_together_september %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter(imported_cases_scenario_3_low < 0.1) %>%
+    nrow()
+
+scenario_c_less_than_10_high <- imported_cases_and_incidence_together_september %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter(imported_cases_scenario_3_high < 0.1) %>%
+    nrow()
+
+less_than_10_scenario_c <- paste0(median(c(scenario_c_less_than_10_mid, scenario_c_less_than_10_low, scenario_c_less_than_10_high)), " (",
+                                  min(c(scenario_c_less_than_10_mid, scenario_c_less_than_10_low, scenario_c_less_than_10_high)), " - ",
+                                  max(c(scenario_c_less_than_10_mid, scenario_c_less_than_10_low, scenario_c_less_than_10_high)), ")")
+
+#--- Scenario D
+scenario_d_less_than_10_mid <- imported_cases_and_incidence_together_september %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter(imported_cases_scenario_4_mid < 0.1) %>%
+    nrow()
+
+scenario_d_less_than_10_low <- imported_cases_and_incidence_together_september %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter(imported_cases_scenario_4_low < 0.1) %>%
+    nrow()
+
+scenario_d_less_than_10_high <- imported_cases_and_incidence_together_september %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter(imported_cases_scenario_4_high < 0.1) %>%
+    nrow()
+
+less_than_10_scenario_d <- paste0(median(c(scenario_d_less_than_10_mid, scenario_d_less_than_10_low, scenario_d_less_than_10_high)), " (",
+                                  min(c(scenario_d_less_than_10_mid, scenario_d_less_than_10_low, scenario_d_less_than_10_high)), " - ",
+                                  max(c(scenario_d_less_than_10_mid, scenario_d_less_than_10_low, scenario_d_less_than_10_high)), ")")
+
+
+#--- all results
+less_than_10_scenario_a
+less_than_10_scenario_b
+less_than_10_scenario_c
+less_than_10_scenario_d
+
+less_than_10_results <- dplyr::tibble(scenario = c("A", "B", "C", "D"),
+                                      nunber_of_countries = c(
+                                          less_than_10_scenario_a, 
+                                          less_than_10_scenario_b,
+                                          less_than_10_scenario_c, 
+                                          less_than_10_scenario_d))
+
+
+#--- Results for condition greater than 0.1 (greater than 10%)
+#--- Scenario A
+
+scenario_a_greater_than_10_mid <- imported_cases_and_incidence_together_may %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter(imported_cases_scenario_1_mid > 0.1) %>%
+    nrow()
+
+scenario_a_greater_than_10_low <- imported_cases_and_incidence_together_may %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter(imported_cases_scenario_1_low > 0.1) %>%
+    nrow()
+
+scenario_a_greater_than_10_high <- imported_cases_and_incidence_together_may %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter(imported_cases_scenario_1_high > 0.1) %>%
+    nrow()
+
+greater_than_10_scenario_a <- paste0(median(c(scenario_a_greater_than_10_mid, scenario_a_greater_than_10_low, scenario_a_greater_than_10_high)), " (",
+                                  min(c(scenario_a_greater_than_10_mid, scenario_a_greater_than_10_low, scenario_a_greater_than_10_high)), " - ",
+                                  max(c(scenario_a_greater_than_10_mid, scenario_a_greater_than_10_low, scenario_a_greater_than_10_high)), ")")
+
+
+#--- Scenario B
+scenario_b_greater_than_10_mid <- imported_cases_and_incidence_together_may %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter(imported_cases_scenario_2_mid > 0.1) %>%
+    nrow()
+
+scenario_b_greater_than_10_low <- imported_cases_and_incidence_together_may %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter(imported_cases_scenario_2_low > 0.1) %>%
+    nrow()
+
+scenario_b_greater_than_10_high <- imported_cases_and_incidence_together_may %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter(imported_cases_scenario_2_high > 0.1) %>%
+    nrow()
+
+greater_than_10_scenario_b <- paste0(median(c(scenario_b_greater_than_10_mid, scenario_b_greater_than_10_low, scenario_b_greater_than_10_high)), " (",
+                                     min(c(scenario_b_greater_than_10_mid, scenario_b_greater_than_10_low, scenario_b_greater_than_10_high)), " - ",
+                                     max(c(scenario_b_greater_than_10_mid, scenario_b_greater_than_10_low, scenario_b_greater_than_10_high)), ")")
+
+
+#--- Scenario C
+scenario_c_greater_than_10_mid <- imported_cases_and_incidence_together_september %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter(imported_cases_scenario_3_mid > 0.1) %>%
+    nrow()
+
+scenario_c_greater_than_10_low <- imported_cases_and_incidence_together_september %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter(imported_cases_scenario_3_low > 0.1) %>%
+    nrow()
+
+scenario_c_greater_than_10_high <- imported_cases_and_incidence_together_september %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter(imported_cases_scenario_3_high > 0.1) %>%
+    nrow()
+
+greater_than_10_scenario_c <- paste0(median(c(scenario_c_greater_than_10_mid, scenario_c_greater_than_10_low, scenario_c_greater_than_10_high)), " (",
+                                     min(c(scenario_c_greater_than_10_mid, scenario_c_greater_than_10_low, scenario_c_greater_than_10_high)), " - ",
+                                     max(c(scenario_c_greater_than_10_mid, scenario_c_greater_than_10_low, scenario_c_greater_than_10_high)), ")")
+
+#--- Scenario D
+scenario_d_greater_than_10_mid <- imported_cases_and_incidence_together_september %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter(imported_cases_scenario_4_mid > 0.1) %>%
+    nrow()
+
+scenario_d_greater_than_10_low <- imported_cases_and_incidence_together_september %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter(imported_cases_scenario_4_low > 0.1) %>%
+    nrow()
+
+scenario_d_greater_than_10_high <- imported_cases_and_incidence_together_september %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter(imported_cases_scenario_4_high > 0.1) %>%
+    nrow()
+
+greater_than_10_scenario_d <- paste0(median(c(scenario_d_greater_than_10_mid, scenario_d_greater_than_10_low, scenario_d_greater_than_10_high)), " (",
+                                     min(c(scenario_d_greater_than_10_mid, scenario_d_greater_than_10_low, scenario_d_greater_than_10_high)), " - ",
+                                     max(c(scenario_d_greater_than_10_mid, scenario_d_greater_than_10_low, scenario_d_greater_than_10_high)), ")")
+
+
+#--- all results
+greater_than_10_scenario_a
+greater_than_10_scenario_b
+greater_than_10_scenario_c
+greater_than_10_scenario_d
+
+greater_than_10_results <- dplyr::tibble(scenario = c("A", "B", "C", "D"),
+                                      nunber_of_countries = c(
+                                          greater_than_10_scenario_a, 
+                                          greater_than_10_scenario_b,
+                                          greater_than_10_scenario_c, 
+                                          greater_than_10_scenario_d))
+
+
+
+#--- Rt estimate conditions
+#--- Rt between 0.95 and 1.05 OR risk rating higher than 1%
+#--- Scenario A
+rt_condition_1_countries_scenario_a_mid <- imported_cases_and_incidence_together_may %>%
     dplyr::rename(iso_code = destination_country_iso_code) %>%
     dplyr::left_join(rt_estimates_raw) %>%
     dplyr::filter((0.95 <= median & median <= 1.05) | imported_cases_scenario_1_mid > 0.01) %>%
     nrow()
 
-rt_condition_countries_scenario_a_low <- imported_cases_and_incidence_together_may %>%
+rt_condition_1_countries_scenario_a_low <- imported_cases_and_incidence_together_may %>%
     dplyr::rename(iso_code = destination_country_iso_code) %>%
     dplyr::left_join(rt_estimates_raw) %>%
     dplyr::filter(0.95 <= median & median <= 1.05 | imported_cases_scenario_1_low > 0.01) %>%
     nrow()
 
 
-rt_condition_countries_scenario_a_high <- imported_cases_and_incidence_together_may %>%
+rt_condition_1_countries_scenario_a_high <- imported_cases_and_incidence_together_may %>%
     dplyr::rename(iso_code = destination_country_iso_code) %>%
     dplyr::left_join(rt_estimates_raw) %>%
     dplyr::filter(0.95 <= median & median <= 1.05 | imported_cases_scenario_1_high > 0.01) %>%
     nrow()
 
-rt_condition_scenario_a <- paste0(rt_condition_countries_scenario_a_mid, " (",
-                                  rt_condition_countries_scenario_a_low, " - ", 
-                                  rt_condition_countries_scenario_a_high, ")")
+rt_condition_1_scenario_a <- paste0(rt_condition_1_countries_scenario_a_mid, " (",
+                                  rt_condition_1_countries_scenario_a_low, " - ", 
+                                  rt_condition_1_countries_scenario_a_high, ")")
 
 #--- Scenario B
-rt_condition_countries_scenario_b_mid <- imported_cases_and_incidence_together_may %>%
+rt_condition_1_countries_scenario_b_mid <- imported_cases_and_incidence_together_may %>%
     dplyr::rename(iso_code = destination_country_iso_code) %>%
     dplyr::left_join(rt_estimates_raw) %>%
     dplyr::filter((0.95 <= median & median <= 1.05) | imported_cases_scenario_2_mid > 0.01) %>%
     nrow()
 
-rt_condition_countries_scenario_b_low <- imported_cases_and_incidence_together_may %>%
+rt_condition_1_countries_scenario_b_low <- imported_cases_and_incidence_together_may %>%
     dplyr::rename(iso_code = destination_country_iso_code) %>%
     dplyr::left_join(rt_estimates_raw) %>%
     dplyr::filter(0.95 <= median & median <= 1.05 | imported_cases_scenario_2_low > 0.01) %>%
     nrow()
 
 
-rt_condition_countries_scenario_b_high <- imported_cases_and_incidence_together_may %>%
+rt_condition_1_countries_scenario_b_high <- imported_cases_and_incidence_together_may %>%
     dplyr::rename(iso_code = destination_country_iso_code) %>%
     dplyr::left_join(rt_estimates_raw) %>%
     dplyr::filter(0.95 <= median & median <= 1.05 | imported_cases_scenario_2_high > 0.01) %>%
     nrow()
 
-rt_condition_scenario_b <- paste0(rt_condition_countries_scenario_b_mid, " (",
-                                  rt_condition_countries_scenario_b_low, " - ",
-                                  rt_condition_countries_scenario_b_high, ")")
+rt_condition_1_scenario_b <- paste0(rt_condition_1_countries_scenario_b_mid, " (",
+                                  rt_condition_1_countries_scenario_b_low, " - ",
+                                  rt_condition_1_countries_scenario_b_high, ")")
 
 #--- Scenario C
-rt_condition_countries_scenario_c_mid <- imported_cases_and_incidence_together_september %>%
+rt_condition_1_countries_scenario_c_mid <- imported_cases_and_incidence_together_september %>%
     dplyr::rename(iso_code = destination_country_iso_code) %>%
     dplyr::left_join(rt_estimates_raw) %>%
     dplyr::filter((0.95 <= median & median <= 1.05) | imported_cases_scenario_3_mid > 0.01) %>%
     nrow()
 
-rt_condition_countries_scenario_c_low <- imported_cases_and_incidence_together_september %>%
+rt_condition_1_countries_scenario_c_low <- imported_cases_and_incidence_together_september %>%
     dplyr::rename(iso_code = destination_country_iso_code) %>%
     dplyr::left_join(rt_estimates_raw) %>%
     dplyr::filter(0.95 <= median & median <= 1.05 | imported_cases_scenario_3_low > 0.01) %>%
     nrow()
 
 
-rt_condition_countries_scenario_c_high <- imported_cases_and_incidence_together_september %>%
+rt_condition_1_countries_scenario_c_high <- imported_cases_and_incidence_together_september %>%
     dplyr::rename(iso_code = destination_country_iso_code) %>%
     dplyr::left_join(rt_estimates_raw) %>%
     dplyr::filter(0.95 <= median & median <= 1.05 | imported_cases_scenario_3_high > 0.01) %>%
     nrow()
 
-rt_condition_scenario_c <- paste0(rt_condition_countries_scenario_c_mid, " (",
-                                  rt_condition_countries_scenario_c_low, " - ",
-                                  rt_condition_countries_scenario_c_high, ")")
+rt_condition_1_scenario_c <- paste0(rt_condition_1_countries_scenario_c_mid, " (",
+                                  rt_condition_1_countries_scenario_c_low, " - ",
+                                  rt_condition_1_countries_scenario_c_high, ")")
 
 #--- Scenario D
-rt_condition_countries_scenario_d_mid <- imported_cases_and_incidence_together_september %>%
+rt_condition_1_countries_scenario_d_mid <- imported_cases_and_incidence_together_september %>%
     dplyr::rename(iso_code = destination_country_iso_code) %>%
     dplyr::left_join(rt_estimates_raw) %>%
     dplyr::filter((0.95 <= median & median <= 1.05) | imported_cases_scenario_4_mid > 0.01) %>%
     nrow()
 
-rt_condition_countries_scenario_d_low <- imported_cases_and_incidence_together_september %>%
+rt_condition_1_countries_scenario_d_low <- imported_cases_and_incidence_together_september %>%
     dplyr::rename(iso_code = destination_country_iso_code) %>%
     dplyr::left_join(rt_estimates_raw) %>%
     dplyr::filter(0.95 <= median & median <= 1.05 | imported_cases_scenario_4_low > 0.01) %>%
     nrow()
 
 
-rt_condition_countries_scenario_d_high <- imported_cases_and_incidence_together_september %>%
+rt_condition_1_countries_scenario_d_high <- imported_cases_and_incidence_together_september %>%
     dplyr::rename(iso_code = destination_country_iso_code) %>%
     dplyr::left_join(rt_estimates_raw) %>%
     dplyr::filter((0.95 <= median & median <= 1.05) | imported_cases_scenario_4_high > 0.01) %>%
     nrow()
 
-rt_condition_scenario_d <- paste0(rt_condition_countries_scenario_d_mid, " (",
-                                  rt_condition_countries_scenario_d_low, " - ",
-                                  rt_condition_countries_scenario_d_high, ")")
+rt_condition_1_scenario_d <- paste0(rt_condition_1_countries_scenario_d_mid, " (",
+                                  rt_condition_1_countries_scenario_d_low, " - ",
+                                  rt_condition_1_countries_scenario_d_high, ")")
 
-rt_condition_scenario_a
-rt_condition_scenario_b
-rt_condition_scenario_c
-rt_condition_scenario_d
+rt_condition_1_scenario_a
+rt_condition_1_scenario_b
+rt_condition_1_scenario_c
+rt_condition_1_scenario_d
+
+
+rt_condition_1_results <- dplyr::tibble(scenario = c("A", "B", "C", "D"),
+                                         nunber_of_countries = c(
+                                             rt_condition_1_scenario_a, 
+                                             rt_condition_1_scenario_b,
+                                             rt_condition_1_scenario_c, 
+                                             rt_condition_1_scenario_d))
+
+
+#--- Rt less than 0.95 or greater than 1.05 AND risk rating lower than 1%
+#--- Scenario A
+rt_condition_2_countries_scenario_a_mid <- imported_cases_and_incidence_together_may %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter((median < 0.95 | median > 1.05) & imported_cases_scenario_1_mid < 0.01) %>%
+    nrow()
+
+rt_condition_2_countries_scenario_a_low <- imported_cases_and_incidence_together_may %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter((median < 0.95 | median > 1.05) & imported_cases_scenario_1_low < 0.01) %>%
+    nrow()
+
+
+rt_condition_2_countries_scenario_a_high <- imported_cases_and_incidence_together_may %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter((median < 0.95 | median > 1.05) & imported_cases_scenario_1_high < 0.01) %>%
+    nrow()
+
+rt_condition_2_scenario_a <- paste0(rt_condition_2_countries_scenario_a_mid, " (",
+                                 rt_condition_2_countries_scenario_a_high, " - ", 
+                                 rt_condition_2_countries_scenario_a_low, ")")
+
+#--- Scenario B
+rt_condition_2_countries_scenario_b_mid <- imported_cases_and_incidence_together_may %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter((median < 0.95 | median > 1.05) & imported_cases_scenario_2_mid < 0.01) %>%
+    nrow()
+
+rt_condition_2_countries_scenario_b_low <- imported_cases_and_incidence_together_may %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter((median < 0.95 | median > 1.05) & imported_cases_scenario_2_low < 0.01) %>%
+    nrow()
+
+
+rt_condition_2_countries_scenario_b_high <- imported_cases_and_incidence_together_may %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter((median < 0.95 | median > 1.05) & imported_cases_scenario_2_high < 0.01) %>%
+    nrow()
+
+rt_condition_2_scenario_b <- paste0(rt_condition_2_countries_scenario_b_mid, " (",
+                                  rt_condition_2_countries_scenario_b_high, " - ",
+                                  rt_condition_2_countries_scenario_b_low, ")")
+
+#--- Scenario C
+rt_condition_2_countries_scenario_c_mid <- imported_cases_and_incidence_together_september %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter((median < 0.95 | median > 1.05) & imported_cases_scenario_3_mid < 0.01) %>%
+    nrow()
+
+rt_condition_2_countries_scenario_c_low <- imported_cases_and_incidence_together_september %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter((median < 0.95 | median > 1.05) & imported_cases_scenario_3_low < 0.01) %>%
+    nrow()
+
+
+rt_condition_2_countries_scenario_c_high <- imported_cases_and_incidence_together_september %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter((median < 0.95 | median > 1.05) & imported_cases_scenario_3_high < 0.01) %>%
+    nrow()
+
+rt_condition_2_scenario_c <- paste0(rt_condition_2_countries_scenario_c_mid, " (",
+                                  rt_condition_2_countries_scenario_c_high, " - ",
+                                  rt_condition_2_countries_scenario_c_low, ")")
+
+#--- Scenario D
+rt_condition_2_countries_scenario_d_mid <- imported_cases_and_incidence_together_september %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter((median < 0.95 | median > 1.05) & imported_cases_scenario_4_mid < 0.01) %>%
+    nrow()
+
+rt_condition_2_countries_scenario_d_low <- imported_cases_and_incidence_together_september %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter((median < 0.95 | median > 1.05) & imported_cases_scenario_4_low < 0.01) %>%
+    nrow()
+
+
+rt_condition_2_countries_scenario_d_high <- imported_cases_and_incidence_together_september %>%
+    dplyr::rename(iso_code = destination_country_iso_code) %>%
+    dplyr::left_join(rt_estimates_raw) %>%
+    dplyr::filter((median < 0.95 | median > 1.05) & imported_cases_scenario_4_high < 0.01) %>%
+    nrow()
+
+rt_condition_2_scenario_d <- paste0(rt_condition_2_countries_scenario_d_mid, " (",
+                                  rt_condition_2_countries_scenario_d_high, " - ",
+                                  rt_condition_2_countries_scenario_d_low, ")")
+
+rt_condition_2_results <- dplyr::tibble(scenario = c("A", "B", "C", "D"),
+                                      nunber_of_countries = c(
+                                          rt_condition_2_scenario_a, 
+                                          rt_condition_2_scenario_b,
+                                          rt_condition_2_scenario_c, 
+                                          rt_condition_2_scenario_d))
+rt_condition_2_results
